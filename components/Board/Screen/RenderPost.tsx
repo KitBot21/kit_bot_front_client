@@ -1,10 +1,19 @@
 import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Post } from "@/components/api/types/chat_types";
+import { Post } from "@/components/api/types/APITypes/chat_types";
+import { useNavigation } from "expo-router";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/App";
 
 export default function RenderPost({ item }: { item: Post }) {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handlePress = () => {
+    navigation.navigate("PostDetail", { postId: item.id });
+  };
   return (
-    <TouchableOpacity style={styles.postCard}>
+    <TouchableOpacity style={styles.postCard} onPress={handlePress}>
       <Text style={styles.postTitle} numberOfLines={1}>
         {item.title}
       </Text>

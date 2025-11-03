@@ -10,7 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Post } from "@/components/api/types/chat_types";
+import { Post } from "@/components/api/types/APITypes/chat_types";
 import RenderPost from "./RenderPost";
 const DUMMY_POSTS: Post[] = [
   {
@@ -21,42 +21,6 @@ const DUMMY_POSTS: Post[] = [
     createdAt: "2시간 전",
     commentCount: 12,
     likeCount: 5,
-  },
-  {
-    id: "2",
-    title: "중간고사 범위 공유",
-    content: "이번 중간고사 범위 정리해봤어요",
-    author: "김철수",
-    createdAt: "5시간 전",
-    commentCount: 24,
-    likeCount: 18,
-  },
-  {
-    id: "3",
-    title: "동아리 신입 회원 모집합니다",
-    content: "코딩 동아리에서 신입 회원을 모집하고 있습니다",
-    author: "이영희",
-    createdAt: "1일 전",
-    commentCount: 8,
-    likeCount: 3,
-  },
-  {
-    id: "4",
-    title: "도서관 좌석 정보",
-    content: "지금 3층이 비어있어요",
-    author: "박민수",
-    createdAt: "1일 전",
-    commentCount: 5,
-    likeCount: 10,
-  },
-  {
-    id: "5",
-    title: "버스 시간표 변경 안내",
-    content: "다음 주부터 버스 시간표가 변경됩니다",
-    author: "관리자",
-    createdAt: "2일 전",
-    commentCount: 15,
-    likeCount: 22,
   },
 ];
 

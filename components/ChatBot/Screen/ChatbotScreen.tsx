@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { SourceDTO } from "@/components/api/types/chat_types";
+import { SourceDTO } from "@/components/api/types/APITypes/chat_types";
 import { usePostChatQuery } from "@/components/api/hooks/usePostChatQuery";
 interface Message {
   id: string;

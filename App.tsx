@@ -10,10 +10,12 @@ import { MainTabs } from "./components/Tab/MainTab";
 import CommonHeader from "./components/Common/CommonHeader";
 import QuestionWrite from "./components/Board/Screen/QuestionWrite";
 import BoardScreen from "./components/Board/Screen/BoardScreen";
+import PostDetail from "./components/Board/Screen/PostDetails/PostDetail";
 export type RootStackParamList = {
   MainTabs: undefined;
   QuestionWrite: undefined;
   BoardScreen: undefined;
+  PostDetail: { postId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -40,6 +42,10 @@ function AppLayout() {
             <Stack.Screen
               name="QuestionWrite"
               component={QuestionWrite}
+            ></Stack.Screen>
+            <Stack.Screen
+              name="PostDetail"
+              component={PostDetail}
             ></Stack.Screen>
           </Stack.Navigator>
         </NavigationContainer>
