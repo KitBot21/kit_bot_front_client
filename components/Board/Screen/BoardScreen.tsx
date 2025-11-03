@@ -75,7 +75,7 @@ export default function BoardScreen() {
 
       <FlatList
         data={DUMMY_POSTS}
-        renderItem={RenderPost}
+        renderItem={({ item }) => <RenderPost item={item} />}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}

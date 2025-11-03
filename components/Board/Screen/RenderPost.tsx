@@ -4,10 +4,7 @@ import { Post } from "@/components/api/types/chat_types";
 
 export default function RenderPost({ item }: { item: Post }) {
   return (
-    <TouchableOpacity
-      style={styles.postCard}
-      //   onPress={() => navigation.navigate("PostDetail", { postId: item.id })}
-    >
+    <TouchableOpacity style={styles.postCard}>
       <Text style={styles.postTitle} numberOfLines={1}>
         {item.title}
       </Text>
