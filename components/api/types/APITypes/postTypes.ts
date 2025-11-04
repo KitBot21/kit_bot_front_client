@@ -12,6 +12,8 @@ export interface Post {
   updatedAt: string;
   blindedAt: string;
   blindedReason: string;
+  reported: boolean;
+  recommended: boolean;
 }
 
 export interface PostsResponse {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  TextInput,
+  Keyboard,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -13,9 +16,15 @@ import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import RenderPost from "./RenderPost";
 import { usePosts } from "@/components/api/hooks/postQuery";
+
 export default function BoardScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [inputValue, setInputValue] = useState("");
+  const searchInputRef = useRef<TextInput>(null);
 
   const {
     data,
@@ -25,9 +34,36 @@ export default function BoardScreen() {
     isLoading,
     isError,
     refetch,
-  } = usePosts();
+  } = usePosts(searchKeyword);
 
   const posts = data?.pages.flatMap((page) => page.items) ?? [];
+
+  const handleSearchPress = () => {
+    const newShowSearch = !showSearch;
+    setShowSearch(newShowSearch);
+
+    if (newShowSearch) {
+      // 검색창 열 때 포커스
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    } else {
+      // 검색창 닫을 때 초기화
+      setInputValue("");
+      setSearchKeyword("");
+      Keyboard.dismiss();
+    }
+  };
+
+  const handleSearch = () => {
+    setSearchKeyword(inputValue.trim());
+    Keyboard.dismiss(); // ✅ 키보드 닫기
+    searchInputRef.current?.blur(); // ✅ 포커스 해제
+  };
+
+  const handleClearSearch = () => {
+    setInputValue("");
+    setSearchKeyword("");
+    searchInputRef.current?.focus(); // 초기화 후 다시 포커스
+  };
 
   const renderFooter = () => {
     if (!isFetchingNextPage) return null;
@@ -67,13 +103,64 @@ export default function BoardScreen() {
 
   return (
     <View style={styles.container}>
+      {/* 헤더 (검색창 통합) */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>게시판</Text>
-        <TouchableOpacity>
-          <Ionicons name="search-outline" size={24} color="#333" />
-        </TouchableOpacity>
+        {!showSearch ? (
+          <>
+            <Text style={styles.headerTitle}>게시판</Text>
+            <TouchableOpacity onPress={handleSearchPress}>
+              <Ionicons name="search-outline" size={24} color="#333" />
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <View style={styles.searchInputWrapper}>
+              <Ionicons
+                name="search"
+                size={20}
+                color="#8E8E93"
+                style={styles.searchIcon}
+              />
+              <TextInput
+                ref={searchInputRef}
+                style={styles.searchInput}
+                placeholder="게시글 검색..."
+                placeholderTextColor="#999"
+                value={inputValue}
+                onChangeText={setInputValue}
+                onSubmitEditing={handleSearch}
+                returnKeyType="search"
+              />
+              {inputValue.length > 0 && (
+                <TouchableOpacity
+                  onPress={handleClearSearch}
+                  style={styles.clearButton}
+                >
+                  <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={handleSearchPress}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#333" />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
+      {/* 검색 결과 헤더 */}
+      {searchKeyword && (
+        <View style={styles.searchResultHeader}>
+          <Ionicons name="search" size={16} color="#666" />
+          <Text style={styles.searchResultText}>
+            '{searchKeyword}' 검색 결과 ({posts.length}개)
+          </Text>
+        </View>
+      )}
+
+      {/* 게시글 목록 */}
       <FlatList
         data={posts}
         renderItem={({ item }) => <RenderPost item={item} />}
@@ -86,13 +173,21 @@ export default function BoardScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="document-text-outline" size={48} color="#C7C7CC" />
-            <Text style={styles.emptyText}>게시글이 없습니다.</Text>
+            <Text style={styles.emptyText}>
+              {searchKeyword ? "검색 결과가 없습니다" : "게시글이 없습니다."}
+            </Text>
+            {searchKeyword && (
+              <Text style={styles.emptySubText}>
+                다른 검색어로 시도해보세요
+              </Text>
+            )}
           </View>
         }
         refreshing={false}
         onRefresh={() => refetch()}
       />
 
+      {/* 글쓰기 버튼 */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate("QuestionWrite")}
@@ -126,6 +221,44 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#333",
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginRight: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 14,
+    color: "#333",
+  },
+  clearButton: {
+    padding: 4,
+  },
+  closeButton: {
+    padding: 0,
+  },
+  searchResultHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    backgroundColor: "#F9F9F9",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+  },
+  searchResultText: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
   },
   listContent: {
     padding: 16,
@@ -166,6 +299,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     color: "#8E8E93",
+  },
+  emptySubText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#C7C7CC",
   },
   fab: {
     position: "absolute",

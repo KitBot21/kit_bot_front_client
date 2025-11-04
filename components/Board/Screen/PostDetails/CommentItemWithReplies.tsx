@@ -1,4 +1,4 @@
-import { CommentResponseDTO } from "@/components/api/types/APITypes/CommentTypes";
+import { CommentResponseDTO } from "@/components/api/types/APITypes/commentTypes";
 import { useReplies } from "@/components/api/hooks/commentQuery";
 import CommentItem from "./CommentItem";
 export default function CommentItemWithReplies({

@@ -39,10 +39,9 @@ function AppLayout() {
         backgroundColor="#ffffff"
         translucent={false}
       ></StatusBar>
-      <CommonHeader />
       <View style={{ flex: 1 }}>
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Navigator screenOptions={{ header: () => <CommonHeader /> }}>
             <Stack.Screen name="MainTabs" component={MainTabs}></Stack.Screen>
             <Stack.Screen
               name="BoardScreen"

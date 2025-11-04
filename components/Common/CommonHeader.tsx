@@ -2,11 +2,21 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useNavigation } from "@react-navigation/native";
+import { RootStackParamList } from "@/App";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 export default function CommonHeader() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const goToHome = () => {
+    navigation.navigate("MainTabs");
+  };
+
   return (
     <View style={styles.header}>
-      <TouchableOpacity style={styles.iconButton}>
+      <TouchableOpacity style={styles.iconButton} onPress={goToHome}>
         <Ionicons name="home" size={24} color="#007AFF" />
       </TouchableOpacity>
 

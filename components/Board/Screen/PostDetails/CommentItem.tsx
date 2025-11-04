@@ -65,7 +65,6 @@ export default function CommentItem({
     );
   };
 
-  // 댓글 삭제
   const handleDeleteComment = () => {
     setShowMenuModal(false);
     Alert.alert("댓글 삭제", "정말 이 댓글을 삭제하시겠습니까?", [
@@ -87,7 +86,6 @@ export default function CommentItem({
     ]);
   };
 
-  // 대댓글 삭제
   const handleDeleteReply = (replyId: string) => {
     setShowReplyMenuModal(false);
     Alert.alert("대댓글 삭제", "정말 이 대댓글을 삭제하시겠습니까?", [
@@ -130,7 +128,6 @@ export default function CommentItem({
               {new Date(comment.createdAt).toLocaleDateString()}
             </Text>
           </View>
-          {/* 댓글 메뉴 버튼 */}
           <TouchableOpacity
             style={styles.menuButton}
             onPress={() => setShowMenuModal(true)}

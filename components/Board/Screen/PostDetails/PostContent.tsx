@@ -32,8 +32,6 @@ export default function PostContent({ post }: PostContentProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [selectedReason, setSelectedReason] = useState("");
-  const [isLiked, setIsLiked] = useState(false);
-  const [isReported, setIsReported] = useState(false);
 
   const toggleRecommendMutation = useToggleRecommendPost();
   const reportMutation = useReportPost();
@@ -63,15 +61,12 @@ export default function PostContent({ post }: PostContentProps) {
   };
 
   const handleLike = () => {
-    toggleRecommendMutation.mutate(post.id, {
-      onSuccess: () => {
-        setIsLiked(!isLiked);
-      },
-    });
+    toggleRecommendMutation.mutate(post.id);
+    console.log(post.recommended);
   };
 
   const handleReport = () => {
-    if (isReported) {
+    if (post.reported) {
       return;
     }
     setShowReportModal(true);
@@ -84,18 +79,17 @@ export default function PostContent({ post }: PostContentProps) {
   };
 
   const handleConfirmReport = () => {
+    setShowConfirmModal(false);
+
     reportMutation.mutate(
       { postId: post.id, reason: selectedReason },
       {
         onSuccess: () => {
-          setShowConfirmModal(false);
-          setIsReported(true);
           Alert.alert("신고 완료", "신고가 완료되었습니다.", [
             { text: "확인" },
           ]);
         },
         onError: (error) => {
-          setShowConfirmModal(false);
           Alert.alert(
             "오류",
             error instanceof Error ? error.message : "신고에 실패했습니다."
@@ -167,14 +161,12 @@ export default function PostContent({ post }: PostContentProps) {
                 <Text style={styles.resolvedText}>해결됨</Text>
               </View>
             )}
-            {/* {isMyPost && ( */}
             <TouchableOpacity
               style={styles.menuButton}
               onPress={handleMenuPress}
             >
               <Ionicons name="ellipsis-vertical" size={20} color="#8E8E93" />
             </TouchableOpacity>
-            {/* )} */}
           </View>
         </View>
 
@@ -193,11 +185,13 @@ export default function PostContent({ post }: PostContentProps) {
             disabled={toggleRecommendMutation.isPending}
           >
             <Ionicons
-              name={isLiked ? "heart" : "heart-outline"}
+              name={post.recommended ? "heart" : "heart-outline"}
               size={20}
-              color={isLiked ? "#FF3B30" : "#8E8E93"}
+              color={post.recommended ? "#FF3B30" : "#8E8E93"}
             />
-            <Text style={[styles.statText, isLiked && styles.likedText]}>
+            <Text
+              style={[styles.statText, post.recommended && styles.likedText]}
+            >
               {post.recommendCount}
             </Text>
           </TouchableOpacity>
@@ -205,17 +199,18 @@ export default function PostContent({ post }: PostContentProps) {
           <TouchableOpacity
             style={styles.statItem}
             onPress={handleReport}
-            disabled={isReported}
+            disabled={post.reported}
           >
             <Ionicons
-              name={isReported ? "alert-circle" : "alert-circle-outline"}
+              name={post.reported ? "alert-circle" : "alert-circle-outline"}
               size={20}
-              color={isReported ? "#FF3B30" : "#8E8E93"}
+              color={post.reported ? "#FF3B30" : "#8E8E93"}
             />
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* 신고 사유 선택 모달 */}
       <Modal
         visible={showReportModal}
         transparent
@@ -268,6 +263,7 @@ export default function PostContent({ post }: PostContentProps) {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* 신고 확인 모달 */}
       <Modal
         visible={showConfirmModal}
         transparent
@@ -313,6 +309,7 @@ export default function PostContent({ post }: PostContentProps) {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* 메뉴 모달 */}
       <Modal
         visible={showMenuModal}
         transparent
