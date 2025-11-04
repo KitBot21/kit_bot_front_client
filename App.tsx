@@ -26,7 +26,14 @@ const queryClient = new QueryClient();
 function AppLayout() {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ paddingTop: insets.top, flex: 1, backgroundColor: "white" }}>
+    <View
+      style={{
+        paddingTop: insets.top,
+        flex: 1,
+        backgroundColor: "white",
+        paddingBottom: insets.bottom,
+      }}
+    >
       <StatusBar
         barStyle="dark-content"
         backgroundColor="#ffffff"
