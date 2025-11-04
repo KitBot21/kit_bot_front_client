@@ -1,4 +1,5 @@
-import { useState } from "react";
+// PostDetail.tsx
+import { useState, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -7,67 +8,101 @@ import {
   ActivityIndicator,
   FlatList,
   Text,
+  TextInput,
+  TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PostContent from "./PostContent";
 import CommentItem from "./CommentItem";
 import CommentInput from "./CommentInput";
-import { PostDetailType } from "@/components/api/types/ComponentTypes/MockType";
 import {
   useComments,
   useCreateComment,
+  useReplies,
 } from "@/components/api/hooks/commentQuery";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "@/App";
-
-interface PostDetailProps {
-  postId: string;
-}
+import { CommentResponseDTO } from "@/components/api/types/APITypes/commentTypes";
+import { usePost } from "@/components/api/hooks/postQuery";
 type PostDetailRouteProp = RouteProp<RootStackParamList, "PostDetail">;
+
+function CommentItemWithReplies({
+  comment,
+  onAdoptAnswer,
+  onReplyPress,
+}: {
+  comment: CommentResponseDTO;
+  onAdoptAnswer: (id: string) => void;
+  onReplyPress: (authorName: string) => void;
+}) {
+  const { data: replies = [] } = useReplies(comment.id);
+
+  return (
+    <CommentItem
+      comment={comment}
+      replies={replies}
+      onAdoptAnswer={onAdoptAnswer}
+      onReplyPress={() => onReplyPress(comment.authorName)}
+    />
+  );
+}
 
 export default function PostDetail() {
   const route = useRoute<PostDetailRouteProp>();
-  const postId = route.params.postId;
+  const postId = route.params?.postId;
 
-  const [post, setPost] = useState<PostDetailType>({
-    id: postId,
-    title: "React Native 상태 관리 라이브러리 추천 부탁드립니다",
-    content:
-      "챗봇에게 물어봤는데 명확한 답변을 못 받아서 여기에 질문 올립니다.\n\nReact Native 프로젝트에서 상태 관리를 어떻게 하는 게 좋을까요?",
-    author: "개발초보",
-    createdAt: "1시간 전",
-    views: 42,
-    isResolved: false,
-    tags: ["챗봇 질문", "답변대기", "React Native"],
-  });
+  console.log("PostDetail - postId:", postId);
 
-  const { data: comments = [], isLoading, error } = useComments(postId);
+  const inputRef = useRef<TextInput>(null);
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyAuthor, setReplyAuthor] = useState<string>("");
+
+  const {
+    data: post,
+    isLoading: isPostLoading,
+    error: postError,
+    refetch: refetchPost,
+  } = usePost(postId);
+
+  const {
+    data: comments = [],
+    isLoading: isCommentsLoading,
+    error: commentsError,
+  } = useComments(postId);
+
   const createCommentMutation = useCreateComment();
 
   const handleAddComment = (text: string) => {
-    createCommentMutation.mutate({
-      postId,
-      content: text,
-      parentId: null,
-    });
+    createCommentMutation.mutate(
+      {
+        postId,
+        content: text,
+        parentId: replyTo,
+      },
+      {
+        onSuccess: () => {
+          setReplyTo(null);
+          setReplyAuthor("");
+        },
+      }
+    );
   };
 
-  const handleAddReply = (text: string, parentId: string) => {
-    createCommentMutation.mutate({
-      postId,
-      content: text,
-      parentId,
-    });
+  const handleReplyPress = (commentId: string, authorName: string) => {
+    setReplyTo(commentId);
+    setReplyAuthor(authorName);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
   };
 
   const handleMarkAsAnswer = (commentId: string) => {
-    setPost({
-      ...post,
-      isResolved: true,
-    });
+    console.log("답변 채택:", commentId);
   };
 
   const renderHeader = () => {
+    if (!post) return null;
+
     return (
       <>
         <PostContent post={post} />
@@ -89,19 +124,48 @@ export default function PostDetail() {
     );
   };
 
-  if (isLoading) {
+  // 로딩 상태
+  if (isPostLoading || isCommentsLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>게시글을 불러오는 중...</Text>
       </View>
     );
   }
 
-  if (error) {
+  // 에러 상태
+  if (postError || commentsError) {
+    const errorMessage =
+      postError?.message || commentsError?.message || "알 수 없는 오류";
+
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={48} color="#FF3B30" />
+        <Text style={styles.errorText}>
+          {postError
+            ? "게시글을 불러올 수 없습니다"
+            : "댓글을 불러올 수 없습니다"}
+        </Text>
+        <Text style={styles.errorDetailText}>{errorMessage}</Text>
+        <Text style={styles.errorDetailText}>postId: {postId}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => refetchPost()}
+        >
+          <Text style={styles.retryButtonText}>다시 시도</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // 게시글이 없는 경우
+  if (!post) {
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={48} color="#8E8E93" />
-        <Text style={styles.errorText}>댓글을 불러올 수 없습니다</Text>
+        <Text style={styles.errorText}>게시글을 찾을 수 없습니다</Text>
+        <Text style={styles.errorDetailText}>postId: {postId}</Text>
       </View>
     );
   }
@@ -115,10 +179,10 @@ export default function PostDetail() {
       <FlatList
         data={comments}
         renderItem={({ item }) => (
-          <CommentItem
+          <CommentItemWithReplies
             comment={item}
             onAdoptAnswer={handleMarkAsAnswer}
-            onReply={handleAddReply}
+            onReplyPress={(authorName) => handleReplyPress(item.id, authorName)}
           />
         )}
         keyExtractor={(item) => item.id}
@@ -129,8 +193,14 @@ export default function PostDetail() {
       />
 
       <CommentInput
+        ref={inputRef}
         onSubmit={handleAddComment}
         isSubmitting={createCommentMutation.isPending}
+        replyTo={replyAuthor}
+        onCancelReply={() => {
+          setReplyTo(null);
+          setReplyAuthor("");
+        }}
       />
     </KeyboardAvoidingView>
   );
@@ -150,16 +220,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F5F5F5",
   },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#8E8E93",
+  },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#F5F5F5",
     gap: 12,
+    padding: 20,
   },
   errorText: {
     fontSize: 16,
     color: "#8E8E93",
+    fontWeight: "600",
+  },
+  errorDetailText: {
+    fontSize: 12,
+    color: "#8E8E93",
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: "#007AFF",
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
   emptyContainer: {
     paddingVertical: 60,

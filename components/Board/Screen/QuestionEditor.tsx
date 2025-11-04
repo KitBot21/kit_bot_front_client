@@ -11,23 +11,52 @@ import {
   ActivityIndicator,
 } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import { useNavigation } from "expo-router";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useState } from "react";
-import { useCreatePost } from "@/components/api/hooks/postQuery";
+import { useState, useEffect } from "react";
+import { useUpdatePost, usePost } from "@/components/api/hooks/postQuery";
+
 const USER_ID = "6908b0ea11c4a31b7f814a5a"; // 임시 사용자 ID
 
-export default function QuestionWrite() {
+type QuestionEditRouteProp = RouteProp<RootStackParamList, "QuestionEdit">;
+
+export default function QuestionEdit() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<QuestionEditRouteProp>();
+  const postId = route.params?.postId;
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  const { mutate: createPost, isPending } = useCreatePost();
+  const { data: post, isLoading: isLoadingPost } = usePost(postId);
+  const { mutate: updatePost, isPending } = useUpdatePost();
+
+  useEffect(() => {
+    if (post) {
+      setTitle(post.title);
+      setContent(post.content);
+    }
+  }, [post]);
 
   const onXPress = () => {
-    navigation.goBack();
+    if (title !== post?.title || content !== post?.content) {
+      Alert.alert(
+        "수정 취소",
+        "수정한 내용이 저장되지 않습니다. 정말 취소하시겠습니까?",
+        [
+          { text: "계속 작성", style: "cancel" },
+          {
+            text: "취소",
+            style: "destructive",
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    } else {
+      navigation.goBack();
+    }
   };
 
   const handleSubmit = () => {
@@ -41,27 +70,63 @@ export default function QuestionWrite() {
       return;
     }
 
-    createPost(
+    if (title === post?.title && content === post?.content) {
+      Alert.alert("알림", "수정된 내용이 없습니다.");
+      return;
+    }
+
+    updatePost(
       {
-        authorId: USER_ID,
-        title: title.trim(),
-        content: content.trim(),
+        postId,
+        data: {
+          authorId: USER_ID,
+          title: title.trim(),
+          content: content.trim(),
+        },
       },
       {
         onSuccess: () => {
-          navigation.goBack();
+          Alert.alert("수정 완료", "게시글이 수정되었습니다.", [
+            {
+              text: "확인",
+              onPress: () => navigation.goBack(),
+            },
+          ]);
         },
         onError: (error) => {
           Alert.alert(
             "오류",
             error instanceof Error
               ? error.message
-              : "게시글 작성에 실패했습니다."
+              : "게시글 수정에 실패했습니다."
           );
         },
       }
     );
   };
+
+  if (isLoadingPost) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>게시글을 불러오는 중...</Text>
+      </View>
+    );
+  }
+
+  if (!post) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.errorText}>게시글을 찾을 수 없습니다.</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>돌아가기</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -72,7 +137,7 @@ export default function QuestionWrite() {
         <TouchableOpacity onPress={onXPress} disabled={isPending}>
           <AntDesign name="close" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>질문 하기</Text>
+        <Text style={styles.headerTitle}>게시글 수정</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -93,7 +158,7 @@ export default function QuestionWrite() {
         <View style={styles.inputSection}>
           <TextInput
             style={styles.contentInput}
-            placeholder="kit-bot에게 답을 듣지 못했던 질문들을 질문해세요"
+            placeholder="내용을 입력해주세요."
             placeholderTextColor="#999"
             multiline
             textAlignVertical="top"
@@ -118,7 +183,7 @@ export default function QuestionWrite() {
         ) : (
           <>
             <AntDesign name="edit" size={20} color="#FFFFFF" />
-            <Text style={styles.submitButtonText}>등록하기</Text>
+            <Text style={styles.submitButtonText}>수정하기</Text>
           </>
         )}
       </TouchableOpacity>
@@ -130,6 +195,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     flexDirection: "row",
@@ -200,6 +269,27 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#8E8E93",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#8E8E93",
+    marginBottom: 16,
+  },
+  backButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: "#007AFF",
+    borderRadius: 8,
+  },
+  backButtonText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#FFFFFF",

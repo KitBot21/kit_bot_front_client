@@ -4,6 +4,7 @@ export interface CommentCreateRequest {
   parentId?: string | null;
 }
 
+// CommentTypes.ts
 export interface CommentResponseDTO {
   id: string;
   postId: string;
@@ -15,4 +16,6 @@ export interface CommentResponseDTO {
   reportCount: number;
   createdAt: string;
   status: string;
+  isRecommended: boolean; // 추가
+  isReported: boolean; // 추가
 }

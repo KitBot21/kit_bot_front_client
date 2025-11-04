@@ -11,11 +11,13 @@ import CommonHeader from "./components/Common/CommonHeader";
 import QuestionWrite from "./components/Board/Screen/QuestionWrite";
 import BoardScreen from "./components/Board/Screen/BoardScreen";
 import PostDetail from "./components/Board/Screen/PostDetails/PostDetail";
+import QuestionEdit from "./components/Board/Screen/QuestionEditor";
 export type RootStackParamList = {
   MainTabs: undefined;
   QuestionWrite: undefined;
   BoardScreen: undefined;
   PostDetail: { postId: string };
+  QuestionEdit: { postId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -47,6 +49,11 @@ function AppLayout() {
               name="PostDetail"
               component={PostDetail}
             ></Stack.Screen>
+            <Stack.Screen
+              name="QuestionEdit"
+              component={QuestionEdit}
+              options={{ headerShown: false }}
+            />
           </Stack.Navigator>
         </NavigationContainer>
       </View>

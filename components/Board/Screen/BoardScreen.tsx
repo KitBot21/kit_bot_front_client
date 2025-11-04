@@ -5,28 +5,65 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Post } from "@/components/api/types/APITypes/chat_types";
 import RenderPost from "./RenderPost";
-const DUMMY_POSTS: Post[] = [
-  {
-    id: "1",
-    title: "학교 주변 맛집 추천해주세요",
-    content: "점심 먹을 곳을 찾고 있는데 추천 부탁드립니다.",
-    author: "홍길동",
-    createdAt: "2시간 전",
-    commentCount: 12,
-    likeCount: 5,
-  },
-];
-
+import { usePosts } from "@/components/api/hooks/postQuery";
 export default function BoardScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    refetch,
+  } = usePosts();
+
+  const posts = data?.pages.flatMap((page) => page.items) ?? [];
+
+  const renderFooter = () => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color="#007AFF" />
+      </View>
+    );
+  };
+
+  const handleEndReached = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>게시글을 불러오는 중...</Text>
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Ionicons name="alert-circle-outline" size={48} color="#FF3B30" />
+        <Text style={styles.errorText}>게시글을 불러오는데 실패했습니다.</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+          <Text style={styles.retryButtonText}>다시 시도</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -38,11 +75,22 @@ export default function BoardScreen() {
       </View>
 
       <FlatList
-        data={DUMMY_POSTS}
+        data={posts}
         renderItem={({ item }) => <RenderPost item={item} />}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="document-text-outline" size={48} color="#C7C7CC" />
+            <Text style={styles.emptyText}>게시글이 없습니다.</Text>
+          </View>
+        }
+        refreshing={false}
+        onRefresh={() => refetch()}
       />
 
       <TouchableOpacity
@@ -59,6 +107,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     flexDirection: "row",
@@ -78,52 +130,41 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
   },
-  postCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: "center",
   },
-  postTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-  },
-  postContent: {
+  loadingText: {
+    marginTop: 12,
     fontSize: 14,
-    color: "#666",
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  postFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  postAuthor: {
-    fontSize: 13,
-    color: "#333",
-    fontWeight: "500",
-  },
-  postTime: {
-    fontSize: 12,
     color: "#8E8E93",
-    marginLeft: 8,
   },
-  postStats: {
-    flexDirection: "row",
-    marginLeft: "auto",
-    gap: 12,
+  errorText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#8E8E93",
+    textAlign: "center",
   },
-  statItem: {
-    flexDirection: "row",
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: "#007AFF",
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  emptyContainer: {
     alignItems: "center",
-    gap: 4,
+    justifyContent: "center",
+    paddingVertical: 60,
   },
-  statText: {
-    fontSize: 12,
+  emptyText: {
+    marginTop: 12,
+    fontSize: 14,
     color: "#8E8E93",
   },
   fab: {
