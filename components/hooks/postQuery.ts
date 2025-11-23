@@ -13,13 +13,13 @@ import {
   reportPost,
   updatePost,
   deletePost,
-} from "../services/chatApi";
+} from "../api/services/chatApi";
 import {
   PostCreateRequest,
   PostUpdateRequest,
-} from "../types/APITypes/postTypes";
+} from "../api/types/APITypes/postTypes";
 
-export const usePosts = (keyword?: string) => {
+export const usePosts = (keyword?: string, enabled: boolean = true) => {
   return useInfiniteQuery({
     queryKey: ["posts", keyword],
     queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
@@ -32,6 +32,7 @@ export const usePosts = (keyword?: string) => {
     getNextPageParam: (lastPage) => {
       return lastPage.hasNext ? lastPage.nextCursor : undefined;
     },
+    enabled: enabled,
   });
 };
 
@@ -47,16 +48,16 @@ export const useCreatePost = () => {
   });
 };
 
-export const usePost = (postId: string) => {
+export const usePost = (postId: string, enabled: boolean = true) => {
   return useQuery({
     queryKey: ["post", postId],
     queryFn: async () => {
-      console.log("usePost - fetching postId:", postId); // 디버깅 로그
+      console.log("usePost - fetching postId:", postId);
       const result = await getPost(postId);
       console.log("usePost - result:", result); // 디버깅 로그
       return result;
     },
-    enabled: !!postId,
+    enabled: enabled,
   });
 };
 

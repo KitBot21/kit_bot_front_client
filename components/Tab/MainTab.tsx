@@ -3,13 +3,24 @@ import ChatbotScreen from "../ChatBot/Screen/ChatbotScreen";
 import BoardScreen from "../Board/Screen/BoardScreen";
 import { Ionicons } from "@expo/vector-icons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useAuth } from "../contexts/AuthContext";
+import { RootStackParamList } from "@/App";
+import { useNavigation } from "expo-router";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 const Tab = createMaterialTopTabNavigator();
 
 export function MainTabs() {
+  const { isAuthenticated } = useAuth();
+
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   return (
     <Tab.Navigator
       screenOptions={{
+        swipeEnabled: isAuthenticated,
+
         tabBarStyle: {
           height: 48,
           backgroundColor: "#FFFFFF",
@@ -49,6 +60,14 @@ export function MainTabs() {
           tabBarIcon: ({ color }) => (
             <FontAwesome name="list-alt" size={20} color={color} />
           ),
+        }}
+        listeners={{
+          tabPress: (e) => {
+            if (!isAuthenticated) {
+              e.preventDefault();
+              navigation.navigate("Login");
+            }
+          },
         }}
       />
     </Tab.Navigator>

@@ -15,7 +15,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState, useEffect } from "react";
-import { useUpdatePost, usePost } from "@/components/api/hooks/postQuery";
+import { useUpdatePost, usePost } from "@/components/hooks/postQuery";
 
 const USER_ID = "6908b0ea11c4a31b7f814a5a"; // 임시 사용자 ID
 

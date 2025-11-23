@@ -1,6 +1,6 @@
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
-import { postChatQuery } from "../services/chatApi";
-import { QueryResponseDTO } from "../types/APITypes/chat_types";
+import { postChatQuery } from "../api/services/chatApi";
+import { QueryResponseDTO } from "../api/types/APITypes/chat_types";
 
 type ChatMutationOptions = UseMutationOptions<QueryResponseDTO, Error, string>;
 

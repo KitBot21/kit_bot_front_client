@@ -13,7 +13,7 @@ import { useNavigation } from "expo-router";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/App";
 import { useState } from "react";
-import { useDeletePost } from "@/components/api/hooks/postQuery";
+import { useDeletePost } from "@/components/hooks/postQuery";
 
 const USER_ID = "6908b0ea11c4a31b7f814a5a";
 

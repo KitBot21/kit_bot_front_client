@@ -14,7 +14,7 @@ import {
   useToggleRecommendComment,
   useReportComment,
   useDeleteComment,
-} from "@/components/api/hooks/commentQuery";
+} from "@/components/hooks/commentQuery";
 
 interface CommentItemProps {
   comment: CommentResponseDTO;

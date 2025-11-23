@@ -16,7 +16,7 @@ import {
   PostUpdateRequest,
 } from "../types/APITypes/postTypes";
 
-const API_BASE_URL = "http://172.30.93.10:8080";
+const API_BASE_URL = "http://192.168.0.11:8080";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

@@ -15,7 +15,7 @@ import { useNavigation } from "expo-router";
 import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { useCreatePost } from "@/components/api/hooks/postQuery";
+import { useCreatePost } from "@/components/hooks/postQuery";
 const USER_ID = "6908b0ea11c4a31b7f814a5a"; // 임시 사용자 ID
 
 export default function QuestionWrite() {

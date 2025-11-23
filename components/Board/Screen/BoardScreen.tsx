@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,8 @@ import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import RenderPost from "./RenderPost";
-import { usePosts } from "@/components/api/hooks/postQuery";
+import { usePosts } from "@/components/hooks/postQuery";
+import { useAuth } from "@/components/contexts/AuthContext";
 
 export default function BoardScreen() {
   const navigation =
@@ -26,6 +27,16 @@ export default function BoardScreen() {
   const [inputValue, setInputValue] = useState("");
   const searchInputRef = useRef<TextInput>(null);
 
+  const { isLoading: authLoading, isAuthenticated, user } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (user && !user.isUsernameSet) {
+        navigation.navigate("SetUsername");
+      }
+    }
+  }, [isAuthenticated, user, authLoading]);
+
   const {
     data,
     fetchNextPage,
@@ -34,7 +45,7 @@ export default function BoardScreen() {
     isLoading,
     isError,
     refetch,
-  } = usePosts(searchKeyword);
+  } = usePosts(searchKeyword, isAuthenticated);
 
   const posts = data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -43,10 +54,8 @@ export default function BoardScreen() {
     setShowSearch(newShowSearch);
 
     if (newShowSearch) {
-      // 검색창 열 때 포커스
       setTimeout(() => searchInputRef.current?.focus(), 100);
     } else {
-      // 검색창 닫을 때 초기화
       setInputValue("");
       setSearchKeyword("");
       Keyboard.dismiss();
@@ -55,14 +64,14 @@ export default function BoardScreen() {
 
   const handleSearch = () => {
     setSearchKeyword(inputValue.trim());
-    Keyboard.dismiss(); // ✅ 키보드 닫기
-    searchInputRef.current?.blur(); // ✅ 포커스 해제
+    Keyboard.dismiss();
+    searchInputRef.current?.blur();
   };
 
   const handleClearSearch = () => {
     setInputValue("");
     setSearchKeyword("");
-    searchInputRef.current?.focus(); // 초기화 후 다시 포커스
+    searchInputRef.current?.focus();
   };
 
   const renderFooter = () => {
@@ -89,6 +98,18 @@ export default function BoardScreen() {
     );
   }
 
+  if (authLoading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated || (user && !user.isUsernameSet)) {
+    return null;
+  }
+
   if (isError) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -103,7 +124,6 @@ export default function BoardScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 헤더 (검색창 통합) */}
       <View style={styles.header}>
         {!showSearch ? (
           <>
@@ -150,7 +170,6 @@ export default function BoardScreen() {
         )}
       </View>
 
-      {/* 검색 결과 헤더 */}
       {searchKeyword && (
         <View style={styles.searchResultHeader}>
           <Ionicons name="search" size={16} color="#666" />
@@ -160,7 +179,6 @@ export default function BoardScreen() {
         </View>
       )}
 
-      {/* 게시글 목록 */}
       <FlatList
         data={posts}
         renderItem={({ item }) => <RenderPost item={item} />}
@@ -187,7 +205,6 @@ export default function BoardScreen() {
         onRefresh={() => refetch()}
       />
 
-      {/* 글쓰기 버튼 */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate("QuestionWrite")}

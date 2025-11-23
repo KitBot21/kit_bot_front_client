@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CommentCreateRequest } from "../types/APITypes/commentTypes";
+import { CommentCreateRequest } from "../api/types/APITypes/commentTypes";
 import {
   getComments,
   getReplies,
@@ -7,7 +7,7 @@ import {
   reportComment,
   toggleRecommendComment,
   deleteComment,
-} from "../services/chatApi";
+} from "../api/services/chatApi";
 
 export const useComments = (postId: string) => {
   return useQuery({

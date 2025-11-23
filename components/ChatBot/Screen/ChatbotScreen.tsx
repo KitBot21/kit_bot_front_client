@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SourceDTO } from "@/components/api/types/APITypes/chat_types";
-import { usePostChatQuery } from "@/components/api/hooks/usePostChatQuery";
+import { usePostChatQuery } from "@/components/hooks/usePostChatQuery";
 interface Message {
   id: string;
   text: string;

@@ -19,11 +19,11 @@ import {
   useComments,
   useCreateComment,
   useReplies,
-} from "@/components/api/hooks/commentQuery";
+} from "@/components/hooks/commentQuery";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "@/App";
 import { CommentResponseDTO } from "@/components/api/types/APITypes/commentTypes";
-import { usePost } from "@/components/api/hooks/postQuery";
+import { usePost } from "@/components/hooks/postQuery";
 type PostDetailRouteProp = RouteProp<RootStackParamList, "PostDetail">;
 
 function CommentItemWithReplies({
