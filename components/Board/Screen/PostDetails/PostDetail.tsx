@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PostContent from "./PostContent";
@@ -24,6 +25,9 @@ import { useRoute, RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "@/App";
 import { CommentResponseDTO } from "@/components/api/types/APITypes/commentTypes";
 import { usePost } from "@/components/hooks/postQuery";
+import { useAuth } from "@/components/contexts/AuthContext";
+import { useNavigation } from "expo-router";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 type PostDetailRouteProp = RouteProp<RootStackParamList, "PostDetail">;
 
 function CommentItemWithReplies({
@@ -50,9 +54,11 @@ function CommentItemWithReplies({
 export default function PostDetail() {
   const route = useRoute<PostDetailRouteProp>();
   const postId = route.params?.postId;
-
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   console.log("PostDetail - postId:", postId);
-
+  const { user } = useAuth();
+  const canWrite = user?.role === "kumoh" || user?.role === "admin";
   const inputRef = useRef<TextInput>(null);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyAuthor, setReplyAuthor] = useState<string>("");
@@ -88,7 +94,25 @@ export default function PostDetail() {
     );
   };
 
+  const handleAuthRequest = () => {
+    Alert.alert(
+      "권한 없음",
+      "댓글을 작성하려면 학교 인증이 필요합니다.\n인증하러 가시겠습니까?",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "인증하기",
+          onPress: () => navigation.navigate("SchoolAuth"),
+        },
+      ]
+    );
+  };
+
   const handleReplyPress = (commentId: string, authorName: string) => {
+    if (!canWrite) {
+      handleAuthRequest();
+      return;
+    }
     setReplyTo(commentId);
     setReplyAuthor(authorName);
     setTimeout(() => {
@@ -201,6 +225,11 @@ export default function PostDetail() {
           setReplyTo(null);
           setReplyAuthor("");
         }}
+        placeholder={
+          canWrite ? "댓글을 입력하세요..." : "학교 인증이 필요한 서비스입니다."
+        }
+        // 권한 없으면 입력 비활성화 (CommentInput 내부 TextInput에 editable={editable} 전달 필요)
+        editable={canWrite}
       />
     </KeyboardAvoidingView>
   );

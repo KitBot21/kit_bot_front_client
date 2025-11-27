@@ -2,9 +2,10 @@
   "expo": {
     "name": "kit_bot_front",
     "slug": "kit_bot_front",
+    "owner": "haeramram",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "kitbotfront",
+    "scheme": "com.kumoh.kitbotfront",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -16,29 +17,35 @@
         "backgroundColor": "#E6F4FE"
       },
       "package": "com.kumoh.kitbotfront",
+      "googleServicesFile": "./google-services.json",
       "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "softwareKeyboardLayoutMode": "resize"
+      "softwareKeyboardLayoutMode": "resize",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "com.kumoh.kitbotfront"
+            }
+          ]
+        }
+      ]
     },
     "web": {
       "output": "static"
     },
     "plugins": [
       "expo-router",
+      ["expo-web-browser", {}],
       [
-        "expo-splash-screen",
+        "@react-native-google-signin/google-signin",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "iosUrlScheme": "com.googleusercontent.apps.358721642016-j5hcv6tjn6rvu04hk65qokap8hulhlgv"
         }
-      ],
-      "expo-web-browser"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

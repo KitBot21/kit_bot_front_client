@@ -44,3 +44,14 @@ export interface PostUpdateRequest {
   title: string;
   content: string;
 }
+
+export interface MyPostResponse {
+  content: Post[];
+  last: boolean;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number; // 현재 페이지 번호
+  first: boolean;
+  empty: boolean;
+}

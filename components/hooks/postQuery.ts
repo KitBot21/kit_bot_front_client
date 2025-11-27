@@ -13,6 +13,7 @@ import {
   reportPost,
   updatePost,
   deletePost,
+  fetchMyPosts,
 } from "../api/services/chatApi";
 import {
   PostCreateRequest,
@@ -115,5 +116,17 @@ export const useDeletePost = () => {
       // 게시글 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
+  });
+};
+
+export const useMyPosts = () => {
+  return useInfiniteQuery({
+    queryKey: ["myPosts"],
+    queryFn: ({ pageParam = 0 }) => fetchMyPosts(pageParam, 10),
+    getNextPageParam: (lastPage) => {
+      // 마지막 페이지가 아니면 다음 페이지 번호(현재 페이지 + 1)를 반환
+      return lastPage.last ? undefined : lastPage.number + 1;
+    },
+    initialPageParam: 0,
   });
 };

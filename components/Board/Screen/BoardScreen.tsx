@@ -9,6 +9,7 @@ import {
   TextInput,
   Keyboard,
   Animated,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -31,7 +32,7 @@ export default function BoardScreen() {
 
   useEffect(() => {
     if (!isLoading) {
-      if (user && !user.isUsernameSet) {
+      if (user && !user.usernameSet) {
         navigation.navigate("SetUsername");
       }
     }
@@ -47,6 +48,9 @@ export default function BoardScreen() {
     refetch,
   } = usePosts(searchKeyword, isAuthenticated);
 
+  console.log("🔥 [BoardScreen] isLoading:", isLoading);
+  console.log("🔥 [BoardScreen] Raw Data:", JSON.stringify(data, null, 2));
+
   const posts = data?.pages.flatMap((page) => page.items) ?? [];
 
   const handleSearchPress = () => {
@@ -60,6 +64,34 @@ export default function BoardScreen() {
       setSearchKeyword("");
       Keyboard.dismiss();
     }
+  };
+
+  const handleWritePress = () => {
+    // 1. 로그인 정보가 아예 없을 때 (방어 코드)
+    if (!user) {
+      Alert.alert("알림", "로그인이 필요합니다.");
+      return;
+    }
+
+    // 2. 학교 인증 안 된 유저 ('guest' 등) 차단
+    // 백엔드 Enum이 소문자 'kumoh' 이므로 정확히 비교해야 함
+    if (user.role !== "kumoh" && user.role !== "admin") {
+      Alert.alert(
+        "권한 없음",
+        "게시글을 작성하려면 금오공대 학생 인증이 필요합니다.\n인증하러 가시겠습니까?",
+        [
+          { text: "취소", style: "cancel" },
+          {
+            text: "인증하기",
+            onPress: () => navigation.navigate("SchoolAuth"), // 학교 인증 화면으로 납치
+          },
+        ]
+      );
+      return;
+    }
+
+    // 3. 인증된 유저(kumoh, admin)는 글쓰기 화면으로 통과!
+    navigation.navigate("QuestionWrite");
   };
 
   const handleSearch = () => {
@@ -106,8 +138,11 @@ export default function BoardScreen() {
     );
   }
 
-  if (!isAuthenticated || (user && !user.isUsernameSet)) {
-    return null;
+  if (!isAuthenticated || (user && !user.usernameSet)) {
+    console.log("🚫 [BoardScreen] Auth check failed:", {
+      isAuthenticated,
+      user,
+    });
   }
 
   if (isError) {
@@ -205,10 +240,7 @@ export default function BoardScreen() {
         onRefresh={() => refetch()}
       />
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate("QuestionWrite")}
-      >
+      <TouchableOpacity style={styles.fab} onPress={handleWritePress}>
         <Ionicons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
     </View>

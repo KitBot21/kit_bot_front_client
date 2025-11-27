@@ -1,4 +1,5 @@
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // [1] 이거 추가
 import {
   QueryRequestDTO,
   QueryResponseDTO,
@@ -14,20 +15,52 @@ import {
   PostsResponse,
   PostCreateRequest,
   PostUpdateRequest,
+  MyPostResponse,
 } from "../types/APITypes/postTypes";
+import { GoogleCalendarEvent } from "../types/APITypes/googleCalendarTypes";
 
-const API_BASE_URL = "http://192.168.0.11:8080";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
+
+apiClient.interceptors.request.use(
+  async (config) => {
+    // 저장소에서 토큰 꺼내기
+    const token = await AsyncStorage.getItem("accessToken");
+
+    // 토큰이 있으면 헤더에 'Bearer 토큰' 형태로 추가
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// [4] (선택) 응답 인터셉터: 403 에러 로그 확인용
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 403) {
+      console.error("🚨 403 Forbidden: 토큰 권한 없음 (로그인 필요)");
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const postChatQuery = async (
   userQuestion: string
 ): Promise<QueryResponseDTO> => {
   const requestData: QueryRequestDTO = {
     question: userQuestion,
-    lang: "ko",
   };
 
   try {
@@ -272,5 +305,139 @@ export const deleteComment = async (commentId: string): Promise<void> => {
       );
     }
     throw new Error("네트워크 오류가 발생했습니다.");
+  }
+};
+
+export const fetchMyPosts = async (page = 0, size = 10) => {
+  const { data } = await apiClient.get<MyPostResponse>("/api/posts/me", {
+    params: {
+      page,
+      size,
+      sort: "createdAt,desc", // 최신순 정렬 기본값
+    },
+  });
+  return data;
+};
+
+export const createGoogleEvent = async (
+  accessToken: string,
+  eventData: {
+    title: string;
+    date: string;
+    startTime?: string;
+    endTime?: string;
+    reminders?: number[]; // [10] 이면 10분 전 알림
+  }
+) => {
+  try {
+    const startDateTime = `${eventData.date}T${
+      eventData.startTime || "09:00"
+    }:00+09:00`;
+    const endDateTime = `${eventData.date}T${
+      eventData.endTime || "10:00"
+    }:00+09:00`;
+
+    // 📍 알림 설정 로직 추가
+    const remindersOverrides =
+      eventData.reminders?.map((min) => ({
+        method: "popup", // 스마트폰 푸시 알림
+        minutes: min,
+      })) || [];
+
+    const body = {
+      summary: eventData.title,
+      description: "KIT-Bot 앱에서 등록됨",
+      start: {
+        dateTime: startDateTime,
+        timeZone: "Asia/Seoul",
+      },
+      end: {
+        dateTime: endDateTime,
+        timeZone: "Asia/Seoul",
+      },
+      // 📍 여기가 핵심: 알림 설정
+      reminders: {
+        useDefault: remindersOverrides.length === 0, // 알림 설정 없으면 구글 기본값 사용
+        overrides: remindersOverrides, // 있으면 내 설정 덮어쓰기
+      },
+    };
+
+    const response = await axios.post(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      body,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("✅ 일정 등록 성공:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ 일정 등록 실패:", error);
+    throw error;
+  }
+};
+
+export const fetchGoogleEvents = async (
+  accessToken: string,
+  timeMin: string,
+  timeMax: string
+) => {
+  try {
+    const response = await axios.get(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: {
+          timeMin: timeMin,
+          timeMax: timeMax,
+          singleEvents: true,
+          orderBy: "startTime",
+        },
+      }
+    );
+    return response.data.items as GoogleCalendarEvent[];
+  } catch (error) {
+    console.error("구글 캘린더 조회 실패:", error);
+    return [];
+  }
+};
+
+export const sendVerificationEmail = async (
+  studentId: string,
+  googleEmail?: string
+) => {
+  const response = await apiClient.post("/api/auth/email/send", {
+    studentId,
+    googleEmail,
+  });
+  return response.data;
+};
+
+// 2. 인증번호 검증 API
+export const verifyEmailCode = async (
+  studentId: string,
+  code: string,
+  googleEmail?: string
+) => {
+  const response = await apiClient.post("/api/auth/email/verify", {
+    studentId,
+    code,
+    googleEmail,
+  });
+  return response.data;
+};
+
+export const updatePushToken = async (pushToken: string) => {
+  try {
+    const response = await apiClient.post("/api/user/push-token", {
+      pushToken: pushToken,
+    });
+    return response.data;
+  } catch (error) {
+    console.log(error);
   }
 };

@@ -15,10 +15,22 @@ interface CommentInputProps {
   isSubmitting?: boolean;
   replyTo?: string;
   onCancelReply?: () => void;
+  placeholder?: string;
+  editable?: boolean;
 }
 
 const CommentInput = forwardRef<TextInput, CommentInputProps>(
-  ({ onSubmit, isSubmitting = false, replyTo, onCancelReply }, ref) => {
+  (
+    {
+      onSubmit,
+      isSubmitting = false,
+      replyTo,
+      onCancelReply,
+      placeholder,
+      editable,
+    },
+    ref
+  ) => {
     const [text, setText] = useState("");
 
     const handleSubmit = () => {
@@ -45,12 +57,12 @@ const CommentInput = forwardRef<TextInput, CommentInputProps>(
             style={styles.input}
             value={text}
             onChangeText={setText}
-            placeholder="댓글 입력..."
+            placeholder={placeholder}
             multiline
             returnKeyType="send"
             onSubmitEditing={handleSubmit}
             blurOnSubmit={false}
-            editable={!isSubmitting}
+            editable={!isSubmitting || editable}
           />
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#007AFF" />

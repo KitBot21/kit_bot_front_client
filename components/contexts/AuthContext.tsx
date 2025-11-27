@@ -2,13 +2,15 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+export type UserRole = "guest" | "kumoh" | "admin";
+
 interface User {
   id: string;
   email: string;
   username: string | null;
-  profileImg: string;
-  role: string;
-  isUsernameSet: boolean;
+  profileImg?: string;
+  role: UserRole;
+  usernameSet: boolean;
 }
 
 interface AuthContextType {
@@ -29,7 +31,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadAuthData();
+    // loadAuthData(); // 이건 주석처리 잘 하셨습니다.
+
+    const clearData = async () => {
+      try {
+        await AsyncStorage.removeItem("accessToken");
+        await AsyncStorage.removeItem("user");
+        await AsyncStorage.removeItem("googleAccessToken");
+      } catch (e) {
+        console.error("데이터 삭제 실패", e);
+      } finally {
+        // 👇 [필수] 이 줄이 빠져있었습니다! 로딩을 끝내줘야 로그인 화면이 뜹니다.
+        setIsLoading(false);
+      }
+    };
+
+    clearData();
   }, []);
 
   const loadAuthData = async () => {
@@ -61,14 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    try {
-      await AsyncStorage.removeItem("accessToken");
-      await AsyncStorage.removeItem("user");
-      setAccessToken(null);
-      setUser(null);
-    } catch (error) {
-      console.error("로그아웃 실패:", error);
-    }
+    await AsyncStorage.clear(); // 전체 삭제 (심플하게)
+    setAccessToken(null);
+    setUser(null);
   };
 
   const updateUser = async (userData: User) => {

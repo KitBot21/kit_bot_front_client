@@ -5,35 +5,29 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useGoogleAuth } from "../hooks/useGoogleAuth";
 import { RootStackParamList } from "@/App";
+import { useGoogleAuth } from "../hooks/useGoogleAuth";
 
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
-  const { promptAsync, request } = useGoogleAuth();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { signIn } = useGoogleAuth();
 
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      await promptAsync();
-      // useGoogleAuth hook에서 자동으로 처리됨
-    } catch (error) {
-      Alert.alert("로그인 실패", "다시 시도해주세요.");
-      console.error(error);
+      await signIn();
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = () => {
-    // MainTabs로 돌아가기 (챗봇 탭)
     navigation.navigate("MainTabs");
   };
 
@@ -49,7 +43,7 @@ export default function LoginScreen() {
         <TouchableOpacity
           style={[styles.googleButton, loading && styles.googleButtonDisabled]}
           onPress={handleGoogleLogin}
-          disabled={!request || loading}
+          disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />

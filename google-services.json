@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "737313746428",
+    "project_id": "kitbot-cc8eb",
+    "storage_bucket": "kitbot-cc8eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:737313746428:android:a940b976eaa84f5c31d679",
+        "android_client_info": {
+          "package_name": "com.kumoh.kitbotfront"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJ_L2nbwudl5c4dAhPAbaeYatHQYLX7L0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -12,17 +12,26 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native"; // 👈 네비게이션 훅 추가
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
 import { SourceDTO } from "@/components/api/types/APITypes/chat_types";
 import { usePostChatQuery } from "@/components/hooks/usePostChatQuery";
+import { RootStackParamList } from "@/App"; // 👈 RootStackParamList 경로 확인 필요
+
+// 1. Message 인터페이스에 isDate 추가
 interface Message {
   id: string;
   text: string;
   sender: "user" | "bot";
   timestamp: Date;
   sources?: SourceDTO[];
+  isDate?: boolean; // 👈 추가됨
 }
 
 export default function ChatbotScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>(); // 👈 네비게이션 사용
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -42,6 +51,7 @@ export default function ChatbotScreen() {
         sender: "bot",
         timestamp: new Date(),
         sources: data.sources,
+        isDate: data.isDate, // 👈 2. 서버에서 받은 값 저장
       };
       setMessages((prev) => [...prev, botMessage]);
     },
@@ -78,11 +88,17 @@ export default function ChatbotScreen() {
     setMessages((prev) => [...prev, userMessage]);
 
     sendQuery(inputText);
-
     setInputText("");
   };
 
-  // 메시지 및 출처 렌더링
+  // 캘린더 이동 함수
+  const handleGoToCalendar = (messageText: string) => {
+    // 캘린더 화면으로 이동하면서 제목을 미리 채워줌
+    navigation.navigate("Calendar");
+    // 만약 파라미터를 넘기고 싶다면:
+    // navigation.navigate("Calendar", { prefillTitle: "일정 등록" }); 처럼 사용 가능
+  };
+
   const renderMessage = ({ item }: { item: Message }) => {
     const isUser = item.sender === "user";
     return (
@@ -101,6 +117,21 @@ export default function ChatbotScreen() {
           <Text style={isUser ? styles.userText : styles.botText}>
             {item.text}
           </Text>
+
+          {/* 3. isDate가 true일 때 캘린더 버튼 표시 */}
+          {!isUser && item.isDate && (
+            <TouchableOpacity
+              style={styles.calendarButton}
+              onPress={() => handleGoToCalendar(item.text)}
+            >
+              <Ionicons name="calendar-outline" size={16} color="#007AFF" />
+              <Text style={styles.calendarButtonText}>
+                {" "}
+                캘린더에 일정 등록하기
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {!isUser && item.sources && item.sources.length > 0 && (
             <View style={styles.sourceContainer}>
               <Text style={styles.sourceTitle}>관련 출처:</Text>
@@ -110,7 +141,7 @@ export default function ChatbotScreen() {
                   onPress={() => Linking.openURL(source.link)}
                 >
                   <Text style={styles.sourceLink} numberOfLines={1}>
-                    {source.title}
+                    - {source.title}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -171,6 +202,7 @@ export default function ChatbotScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ... (기존 스타일 유지) ...
   container: { flex: 1, backgroundColor: "#F5F5F5" },
   messageList: { paddingHorizontal: 16, paddingVertical: 12 },
   messageContainer: { marginBottom: 12 },
@@ -202,12 +234,11 @@ const styles = StyleSheet.create({
     color: "#555",
     marginBottom: 5,
   },
-  sourceLink: { fontSize: 14, color: "#007AFF", fontWeight: "500" },
-  sourceSnippet: {
-    fontSize: 12,
-    color: "#777",
-    fontStyle: "italic",
-    marginBottom: 5,
+  sourceLink: {
+    fontSize: 14,
+    color: "#007AFF",
+    fontWeight: "500",
+    marginBottom: 2,
   },
   loadingContainer: {
     flexDirection: "row",
@@ -246,4 +277,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   sendButtonDisabled: { opacity: 0.5 },
+
+  // 4. [추가] 캘린더 버튼 스타일
+  calendarButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    padding: 8,
+    backgroundColor: "#F0F8FF", // 연한 파란색 배경
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  calendarButtonText: {
+    color: "#007AFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
 });
