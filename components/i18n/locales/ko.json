@@ -1,0 +1,95 @@
+{
+  "common": {
+    "home": "홈",
+    "save": "저장",
+    "cancel": "취소",
+    "confirm": "확인",
+    "delete": "삭제",
+    "edit": "수정",
+    "loading": "로딩 중...",
+    "error": "오류",
+    "failed": "실패했습니다.",
+    "alert": "알림",
+    "retry": "다시 시도",
+    "success": "성공"
+  },
+  "header": {
+    "menu": "메뉴",
+    "mypage": "마이페이지",
+    "settings": "설정",
+    "selectLanguage": "언어 선택",
+    "korean": "한국어",
+    "english": "English"
+  },
+  "tabs": {
+    "chatbot": "챗봇",
+    "board": "게시판"
+  },
+  "notifications": {
+    "title": "알림",
+    "empty": "알림이 없습니다",
+    "emptyDesc": "키워드를 구독하면 새 공지가 올라올 때\n알림을 받을 수 있어요",
+    "goToNotice": "공지사항 바로가기"
+  },
+  "mypage": {
+    "nickname": "닉네임",
+    "nicknameEmpty": "닉네임 없음",
+    "nicknameChanged": "닉네임이 변경되었습니다.",
+    "logout": "로그아웃",
+    "logoutConfirm": "정말 로그아웃 하시겠습니까?",
+    "keywordSubscription": "공지 키워드 구독",
+    "keywordDesc": "구독한 키워드가 포함된 새 공지가 올라오면 알림을 받을 수 있어요.",
+    "myPosts": "내가 쓴 글",
+    "noPosts": "작성한 게시글이 없습니다."
+  },
+  "keywords": {
+    "SCHOLARSHIP": "장학",
+    "COURSE": "학사/수강",
+    "DORM": "생활관",
+    "EVENT": "행사/특강",
+    "EMPLOYMENT": "취업/인턴"
+  },
+  "auth": {
+    "login": "로그인",
+    "loginRequired": "로그인이 필요합니다",
+    "nicknameSet": "닉네임 설정",
+    "nicknamePlaceholder": "닉네임을 입력하세요"
+  },
+  "board": {
+    "title": "게시판",
+    "write": "글쓰기",
+    "noResults": "게시글이 없습니다",
+    "noSearchResults": "검색 결과가 없습니다",
+    "tryOtherKeyword": "다른 검색어로 시도해보세요",
+    "searchPlaceholder": "게시글 검색...",
+    "searchResults": "검색 결과",
+    "count": "개",
+    "loading": "게시글을 불러오는 중...",
+    "loadError": "게시글을 불러오는데 실패했습니다.",
+    "noPermission": "권한 없음",
+    "authRequired": "게시글을 작성하려면 금오공대 학생 인증이 필요합니다.\n인증하러 가시겠습니까?",
+    "authenticate": "인증하기"
+  },
+  "chat": {
+    "placeholder": "메시지를 입력하세요...",
+    "greeting": "안녕하세요! KIT 봇입니다. 무엇을 도와드릴까요?",
+    "generating": "답변을 생성 중입니다...",
+    "error": "오류가 발생했습니다",
+    "sources": "관련 출처",
+    "addToCalendar": "캘린더에 일정 등록하기"
+  },
+  "calendar": {
+    "events": "일정",
+    "noEvents": "일정이 없습니다.",
+    "allDay": "종일",
+    "newEvent": "새 일정 등록",
+    "date": "날짜",
+    "eventPlaceholder": "일정 내용을 입력하세요",
+    "start": "시작",
+    "end": "종료",
+    "reminder": "10분 전 알림 받기",
+    "enterContent": "내용을 입력해주세요.",
+    "eventCreated": "일정이 등록되었습니다.",
+    "eventCreateError": "일정 등록 중 오류가 발생했습니다."
+  }
+}

@@ -12,29 +12,42 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useUnreadNotificationCount } from "../hooks/useNotification";
+import { useTranslation } from "react-i18next";
+import { setStoredLanguage } from "../i18n";
 
 export default function CommonHeader() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t, i18n } = useTranslation();
 
-  // 메뉴 열림/닫힘 상태 관리
+  console.log("현재 언어:", i18n.language);
+  console.log("번역 테스트:", t("header.mypage"));
+
   const [isMenuVisible, setMenuVisible] = useState(false);
+  const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
+  const { data: unreadCount } = useUnreadNotificationCount();
 
   const goToHome = () => {
     navigation.navigate("MainTabs");
   };
 
-  // 마이페이지 이동 함수
   const goToMyPage = () => {
-    setMenuVisible(false); // 메뉴 닫기
-    // 'MyPage'는 실제 RootStackParamList에 정의된 라우트 이름이어야 합니다.
-    // 만약 라우트 이름이 다르다면 수정해주세요 (예: 'Profile', 'Mypage' 등)
+    setMenuVisible(false);
     navigation.navigate("MyPageScreen");
+  };
+
+  const goToNotifications = () => {
+    navigation.navigate("Notifications");
+  };
+
+  const changeLanguage = (lang: string) => {
+    setStoredLanguage(lang);
+    setLanguageModalVisible(false);
   };
 
   return (
     <View style={styles.header}>
-      {/* --- 기존 헤더 영역 --- */}
       <TouchableOpacity style={styles.iconButton} onPress={goToHome}>
         <Ionicons name="home" size={24} color="#007AFF" />
       </TouchableOpacity>
@@ -47,11 +60,26 @@ export default function CommonHeader() {
           <Ionicons name="calendar" size={20} color="#333" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.iconButton}>
+        {/* 언어 선택 버튼 */}
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => setLanguageModalVisible(true)}
+        >
           <Ionicons name="language" size={20} color="#333" />
         </TouchableOpacity>
 
-        {/* 메뉴 버튼: 클릭 시 모달 열기 */}
+        {/* 알림 버튼 */}
+        <TouchableOpacity style={styles.iconButton} onPress={goToNotifications}>
+          <Ionicons name="notifications-outline" size={20} color="#333" />
+          {!!unreadCount && unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 99 ? "99+" : unreadCount.toString()}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.iconButton}
           onPress={() => setMenuVisible(true)}
@@ -60,29 +88,87 @@ export default function CommonHeader() {
         </TouchableOpacity>
       </View>
 
-      {/* --- 우측 사이드 메뉴 (Modal) --- */}
+      {/* 언어 선택 모달 */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isLanguageModalVisible}
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <TouchableWithoutFeedback
+          onPress={() => setLanguageModalVisible(false)}
+        >
+          <View style={styles.languageModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.languageModal}>
+                <Text style={styles.languageTitle}>
+                  {t("header.selectLanguage")}
+                </Text>
+
+                <TouchableOpacity
+                  style={[
+                    styles.languageOption,
+                    i18n.language === "ko" && styles.languageOptionActive,
+                  ]}
+                  onPress={() => changeLanguage("ko")}
+                >
+                  <Text
+                    style={[
+                      styles.languageText,
+                      i18n.language === "ko" && styles.languageTextActive,
+                    ]}
+                  >
+                    {t("header.korean")}
+                  </Text>
+                  {i18n.language === "ko" && (
+                    <Ionicons name="checkmark" size={20} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.languageOption,
+                    i18n.language === "en" && styles.languageOptionActive,
+                  ]}
+                  onPress={() => changeLanguage("en")}
+                >
+                  <Text
+                    style={[
+                      styles.languageText,
+                      i18n.language === "en" && styles.languageTextActive,
+                    ]}
+                  >
+                    {t("header.english")}
+                  </Text>
+                  {i18n.language === "en" && (
+                    <Ionicons name="checkmark" size={20} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* 메뉴 모달 */}
       <Modal
         animationType="fade"
         transparent={true}
         visible={isMenuVisible}
-        onRequestClose={() => setMenuVisible(false)} // 안드로이드 뒤로가기 대응
+        onRequestClose={() => setMenuVisible(false)}
       >
-        {/* 모달 배경 (어두운 부분) - 클릭 시 닫힘 */}
         <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
-          <View style={styles.modalOverlay}>
-            {/* 실제 메뉴 영역 (이 부분만 클릭 이벤트 전파 방지) */}
+          <View style={styles.menuModalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.menuContainer}>
                 <SafeAreaView>
-                  {/* 메뉴 상단: 닫기 버튼 */}
                   <View style={styles.menuHeader}>
-                    <Text style={styles.menuTitle}>Menu</Text>
+                    <Text style={styles.menuTitle}>{t("header.menu")}</Text>
                     <TouchableOpacity onPress={() => setMenuVisible(false)}>
                       <Ionicons name="close" size={28} color="#333" />
                     </TouchableOpacity>
                   </View>
 
-                  {/* 메뉴 리스트 */}
                   <View style={styles.menuItems}>
                     <TouchableOpacity
                       style={styles.menuItem}
@@ -93,17 +179,18 @@ export default function CommonHeader() {
                         size={24}
                         color="#333"
                       />
-                      <Text style={styles.menuText}>마이페이지</Text>
+                      <Text style={styles.menuText}>{t("header.mypage")}</Text>
                     </TouchableOpacity>
 
-                    {/* 추가 메뉴 예시 */}
                     <TouchableOpacity style={styles.menuItem}>
                       <Ionicons
                         name="settings-outline"
                         size={24}
                         color="#333"
                       />
-                      <Text style={styles.menuText}>설정</Text>
+                      <Text style={styles.menuText}>
+                        {t("header.settings")}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </SafeAreaView>
@@ -135,15 +222,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  // --- 모달 스타일 추가 ---
-  modalOverlay: {
+  // 메뉴 모달 오버레이 (오른쪽 정렬)
+  menuModalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // 반투명 검은 배경
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     flexDirection: "row",
-    justifyContent: "flex-end", // 메뉴를 오른쪽으로 정렬
+    justifyContent: "flex-end",
+  },
+  // 언어 모달 오버레이 (중앙 정렬)
+  languageModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   menuContainer: {
-    width: "70%", // 화면 너비의 70% 차지
+    width: "70%",
     backgroundColor: "#FFFFFF",
     height: "100%",
     padding: 20,
@@ -183,5 +277,57 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     fontWeight: "500",
+  },
+  badge: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    backgroundColor: "#FF3B30",
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  // 언어 모달 스타일
+  languageModal: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    maxWidth: 300,
+  },
+  languageTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  languageOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  languageOptionActive: {
+    backgroundColor: "#F0F8FF",
+  },
+  languageText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  languageTextActive: {
+    color: "#007AFF",
+    fontWeight: "600",
   },
 });

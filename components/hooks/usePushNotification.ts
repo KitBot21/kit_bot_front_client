@@ -4,30 +4,24 @@ import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-// 1. 알림 핸들러 설정
-// 1. 알림 핸들러 설정
 Notifications.setNotificationHandler({
   handleNotification: async () =>
     ({
       shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: false,
-    } as Notifications.NotificationBehavior), // 👈 여기에 'as ...' 를 붙여주면 해결됩니다!
+    } as Notifications.NotificationBehavior),
 });
 
 export function usePushNotification() {
   const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
-  const [notification, setNotification] = useState<
-    Notifications.Notification | undefined
-  >();
+  const [notification, setNotification] =
+    useState<Notifications.Notification>();
+  const [notificationResponse, setNotificationResponse] =
+    useState<Notifications.NotificationResponse>();
 
-  // 2. useRef 초기값(undefined) 추가하여 에러 해결
-  const notificationListener = useRef<Notifications.Subscription | undefined>(
-    undefined
-  );
-  const responseListener = useRef<Notifications.Subscription | undefined>(
-    undefined
-  );
+  const notificationListener = useRef<Notifications.Subscription | null>(null);
+  const responseListener = useRef<Notifications.Subscription | null>(null);
 
   async function registerForPushNotificationsAsync() {
     let token;
@@ -62,7 +56,6 @@ export function usePushNotification() {
           Constants.easConfig?.projectId;
 
         if (!projectId) {
-          // 프로젝트 ID가 없을 경우 예외 처리
           console.log(
             "Project ID not found in app.json. Check 'eas.projectId'"
           );
@@ -100,14 +93,14 @@ export function usePushNotification() {
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
         console.log("알림 클릭함:", response);
+        setNotificationResponse(response);
       });
 
     return () => {
-      // 3. 변경된 삭제 방식 (.remove() 사용) 적용
-      notificationListener.current && notificationListener.current.remove();
-      responseListener.current && responseListener.current.remove();
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
     };
   }, []);
 
-  return { expoPushToken, notification };
+  return { expoPushToken, notification, notificationResponse };
 }

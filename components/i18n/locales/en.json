@@ -1,0 +1,95 @@
+{
+  "common": {
+    "home": "Home",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "failed": "Failed.",
+    "alert": "Alert",
+    "retry": "Retry",
+    "success": "Success",
+    "error": "Error"
+  },
+  "header": {
+    "menu": "Menu",
+    "mypage": "My Page",
+    "settings": "Settings",
+    "selectLanguage": "Select Language",
+    "korean": "한국어",
+    "english": "English"
+  },
+  "tabs": {
+    "chatbot": "Chatbot",
+    "board": "Board"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "emptyDesc": "Subscribe to keywords to receive\nnotifications for new announcements",
+    "goToNotice": "Go to Notice"
+  },
+  "mypage": {
+    "nickname": "Nickname",
+    "nicknameEmpty": "No nickname",
+    "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to logout?",
+    "keywordSubscription": "Keyword Subscription",
+    "keywordDesc": "Get notified when new announcements contain your subscribed keywords.",
+    "myPosts": "My Posts",
+    "noPosts": "No posts yet.",
+    "nicknameChanged": "Nickname has been changed."
+  },
+  "keywords": {
+    "SCHOLARSHIP": "Scholarship",
+    "COURSE": "Academic",
+    "DORM": "Dormitory",
+    "EVENT": "Event",
+    "EMPLOYMENT": "Employment"
+  },
+  "auth": {
+    "login": "Login",
+    "loginRequired": "Login required",
+    "nicknameSet": "Set Nickname",
+    "nicknamePlaceholder": "Enter nickname"
+  },
+  "board": {
+    "title": "Board",
+    "write": "Write",
+    "noResults": "No posts found",
+    "noSearchResults": "No search results",
+    "tryOtherKeyword": "Try a different keyword",
+    "searchPlaceholder": "Search posts...",
+    "searchResults": "search results",
+    "count": "",
+    "loading": "Loading posts...",
+    "loadError": "Failed to load posts.",
+    "noPermission": "No Permission",
+    "authRequired": "You need to verify as a Kumoh student to write posts.\nWould you like to verify now?",
+    "authenticate": "Verify"
+  },
+  "chat": {
+    "placeholder": "Type a message...",
+    "greeting": "Hello! I'm KIT Bot. How can I help you?",
+    "generating": "Generating response...",
+    "error": "An error occurred",
+    "sources": "Related sources",
+    "addToCalendar": "Add to Calendar"
+  },
+  "calendar": {
+    "events": "Events",
+    "noEvents": "No events.",
+    "allDay": "All day",
+    "newEvent": "New Event",
+    "date": "Date",
+    "eventPlaceholder": "Enter event details",
+    "start": "Start",
+    "end": "End",
+    "reminder": "Remind me 10 min before",
+    "enterContent": "Please enter content.",
+    "eventCreated": "Event has been created.",
+    "eventCreateError": "Failed to create event."
+  }
+}

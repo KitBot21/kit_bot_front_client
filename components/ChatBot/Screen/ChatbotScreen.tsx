@@ -12,30 +12,32 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native"; // 👈 네비게이션 훅 추가
+import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from "react-i18next";
 
 import { SourceDTO } from "@/components/api/types/APITypes/chat_types";
 import { usePostChatQuery } from "@/components/hooks/usePostChatQuery";
-import { RootStackParamList } from "@/App"; // 👈 RootStackParamList 경로 확인 필요
+import { RootStackParamList } from "@/App";
 
-// 1. Message 인터페이스에 isDate 추가
 interface Message {
   id: string;
   text: string;
   sender: "user" | "bot";
   timestamp: Date;
   sources?: SourceDTO[];
-  isDate?: boolean; // 👈 추가됨
+  isDate?: boolean;
 }
 
 export default function ChatbotScreen() {
   const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>(); // 👈 네비게이션 사용
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useTranslation();
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "안녕하세요! KIT 봇입니다. 무엇을 도와드릴까요?",
+      text: t("chat.greeting"),
       sender: "bot",
       timestamp: new Date(),
     },
@@ -51,7 +53,7 @@ export default function ChatbotScreen() {
         sender: "bot",
         timestamp: new Date(),
         sources: data.sources,
-        isDate: data.isDate, // 👈 2. 서버에서 받은 값 저장
+        isDate: data.isDate,
       };
       setMessages((prev) => [...prev, botMessage]);
     },
@@ -59,7 +61,7 @@ export default function ChatbotScreen() {
     onError: (error) => {
       const errorMessage: Message = {
         id: Date.now().toString(),
-        text: `오류가 발생했습니다: ${error.message}`,
+        text: `${t("chat.error")}: ${error.message}`,
         sender: "bot",
         timestamp: new Date(),
       };
@@ -91,12 +93,8 @@ export default function ChatbotScreen() {
     setInputText("");
   };
 
-  // 캘린더 이동 함수
   const handleGoToCalendar = (messageText: string) => {
-    // 캘린더 화면으로 이동하면서 제목을 미리 채워줌
     navigation.navigate("Calendar");
-    // 만약 파라미터를 넘기고 싶다면:
-    // navigation.navigate("Calendar", { prefillTitle: "일정 등록" }); 처럼 사용 가능
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
@@ -118,7 +116,6 @@ export default function ChatbotScreen() {
             {item.text}
           </Text>
 
-          {/* 3. isDate가 true일 때 캘린더 버튼 표시 */}
           {!isUser && item.isDate && (
             <TouchableOpacity
               style={styles.calendarButton}
@@ -127,14 +124,14 @@ export default function ChatbotScreen() {
               <Ionicons name="calendar-outline" size={16} color="#007AFF" />
               <Text style={styles.calendarButtonText}>
                 {" "}
-                캘린더에 일정 등록하기
+                {t("chat.addToCalendar")}
               </Text>
             </TouchableOpacity>
           )}
 
           {!isUser && item.sources && item.sources.length > 0 && (
             <View style={styles.sourceContainer}>
-              <Text style={styles.sourceTitle}>관련 출처:</Text>
+              <Text style={styles.sourceTitle}>{t("chat.sources")}:</Text>
               {item.sources.map((source) => (
                 <TouchableOpacity
                   key={source.docId}
@@ -169,7 +166,7 @@ export default function ChatbotScreen() {
       {isPending && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#555" />
-          <Text style={styles.loadingText}>답변을 생성 중입니다...</Text>
+          <Text style={styles.loadingText}>{t("chat.generating")}</Text>
         </View>
       )}
 
@@ -178,7 +175,7 @@ export default function ChatbotScreen() {
           style={styles.input}
           value={inputText}
           onChangeText={setInputText}
-          placeholder="메시지를 입력하세요..."
+          placeholder={t("chat.placeholder")}
           multiline
           editable={!isPending}
         />
@@ -202,7 +199,6 @@ export default function ChatbotScreen() {
 }
 
 const styles = StyleSheet.create({
-  // ... (기존 스타일 유지) ...
   container: { flex: 1, backgroundColor: "#F5F5F5" },
   messageList: { paddingHorizontal: 16, paddingVertical: 12 },
   messageContainer: { marginBottom: 12 },
@@ -277,14 +273,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   sendButtonDisabled: { opacity: 0.5 },
-
-  // 4. [추가] 캘린더 버튼 스타일
   calendarButton: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 10,
     padding: 8,
-    backgroundColor: "#F0F8FF", // 연한 파란색 배경
+    backgroundColor: "#F0F8FF",
     borderRadius: 8,
     alignSelf: "flex-start",
   },

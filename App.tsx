@@ -21,18 +21,23 @@ import SchoolAuthScreen from "./components/auth/SchoolAuthScreen";
 import { useUpdatePushToken } from "./components/hooks/useUserMutation";
 import { useEffect } from "react";
 import { usePushNotification } from "./components/hooks/usePushNotification";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import NotificationsScreen from "./components/Notifications/Screen/NotificationsScreen";
+import { useRef } from "react";
+import "./components/i18n";
 
 export type RootStackParamList = {
   MainTabs: undefined;
   QuestionWrite: undefined;
-  Login: undefined; // 추가
-  SetUsername: undefined; // 추가
+  Login: undefined;
+  SetUsername: undefined;
   BoardScreen: undefined;
   PostDetail: { postId: string };
   QuestionEdit: { postId: string };
   MyPageScreen: undefined;
   Calendar: undefined;
   SchoolAuth: undefined;
+  Notifications: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -40,9 +45,10 @@ const queryClient = new QueryClient();
 
 function AppLayout() {
   const insets = useSafeAreaInsets();
+  const navigationRef = useRef<any>(null); // 👈 추가
 
-  const { expoPushToken } = usePushNotification();
   const { user } = useAuth();
+  const { expoPushToken, notificationResponse } = usePushNotification(); // 👈 notificationResponse 추가
 
   const { mutate: saveToken } = useUpdatePushToken();
 
@@ -51,6 +57,12 @@ function AppLayout() {
       saveToken(expoPushToken);
     }
   }, [expoPushToken, user]);
+
+  useEffect(() => {
+    if (notificationResponse && navigationRef.current) {
+      navigationRef.current.navigate("Notifications");
+    }
+  }, [notificationResponse]);
 
   return (
     <View
@@ -67,7 +79,7 @@ function AppLayout() {
         translucent={false}
       />
       <View style={{ flex: 1 }}>
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           <Stack.Navigator screenOptions={{ header: () => <CommonHeader /> }}>
             <Stack.Screen name="MainTabs" component={MainTabs} />
             <Stack.Screen name="Login" component={LoginScreen} />
@@ -82,6 +94,10 @@ function AppLayout() {
             <Stack.Screen name="MyPageScreen" component={MyPageScreen} />
             <Stack.Screen name="Calendar" component={CalendarScreen} />
             <Stack.Screen name="SchoolAuth" component={SchoolAuthScreen} />
+            <Stack.Screen
+              name="Notifications"
+              component={NotificationsScreen}
+            />
           </Stack.Navigator>
         </NavigationContainer>
       </View>
@@ -92,11 +108,13 @@ function AppLayout() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <AppLayout />
-        </QueryClientProvider>
-      </AuthProvider>
+      <KeyboardProvider>
+        <AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <AppLayout />
+          </QueryClientProvider>
+        </AuthProvider>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

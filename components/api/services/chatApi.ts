@@ -18,6 +18,12 @@ import {
   MyPostResponse,
 } from "../types/APITypes/postTypes";
 import { GoogleCalendarEvent } from "../types/APITypes/googleCalendarTypes";
+import {
+  KeywordSubscription,
+  MyKeywordsResponse,
+  NoticeKeywordInfo,
+} from "../types/APITypes/subscripeKeyword";
+import { NotificationItem } from "../types/APITypes/notification";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -439,5 +445,132 @@ export const updatePushToken = async (pushToken: string) => {
     return response.data;
   } catch (error) {
     console.log(error);
+  }
+};
+
+export const getMyKeywords = async (): Promise<KeywordSubscription[]> => {
+  try {
+    const response = await apiClient.get<KeywordSubscription[]>(
+      "/api/notice-keywords/me"
+    );
+    return response.data;
+  } catch (error) {
+    console.error("API Error in getMyKeywords:", error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.message || "키워드 조회 중 오류가 발생했습니다."
+      );
+    }
+    throw new Error("네트워크 오류가 발생했습니다.");
+  }
+};
+
+// 2. 구독 키워드 일괄 저장 (PUT /api/notice-keywords/me)
+export const updateMyKeywords = async (
+  enabledKeywords: string[]
+): Promise<MyKeywordsResponse> => {
+  try {
+    const response = await apiClient.put<MyKeywordsResponse>(
+      "/api/notice-keywords/me",
+      { enabledKeywords }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("API Error in updateMyKeywords:", error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.message || "키워드 저장 중 오류가 발생했습니다."
+      );
+    }
+    throw new Error("네트워크 오류가 발생했습니다.");
+  }
+};
+
+export const toggleKeywordSubscription = async (
+  keyword: string
+): Promise<KeywordSubscription> => {
+  try {
+    const response = await apiClient.patch<KeywordSubscription>(
+      `/api/notice-keywords/${keyword}/toggle`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("API Error in toggleKeywordSubscription:", error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.message || "키워드 토글 중 오류가 발생했습니다."
+      );
+    }
+    throw new Error("네트워크 오류가 발생했습니다.");
+  }
+};
+
+export const getNoticeKeywords = async (): Promise<NoticeKeywordInfo[]> => {
+  try {
+    const response = await apiClient.get<NoticeKeywordInfo[]>(
+      "/api/notice-keywords"
+    );
+    return response.data;
+  } catch (error) {
+    console.error("API Error in getNoticeKeywords:", error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.message ||
+          "키워드 목록 조회 중 오류가 발생했습니다."
+      );
+    }
+    throw new Error("네트워크 오류가 발생했습니다.");
+  }
+};
+
+export const getMyNotifications = async (): Promise<NotificationItem[]> => {
+  try {
+    const response = await apiClient.get<NotificationItem[]>(
+      "/api/notifications/me"
+    );
+    return response.data;
+  } catch (error) {
+    console.error("API Error in getMyNotifications:", error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.message || "알림 조회 중 오류가 발생했습니다."
+      );
+    }
+    throw new Error("네트워크 오류가 발생했습니다.");
+  }
+};
+
+// 2. 알림 읽음 처리
+export const markNotificationAsRead = async (
+  notificationId: string
+): Promise<void> => {
+  try {
+    await apiClient.patch(`/api/notifications/${notificationId}/read`);
+  } catch (error) {
+    console.error("API Error in markNotificationAsRead:", error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.message || "알림 읽음 처리 중 오류가 발생했습니다."
+      );
+    }
+    throw new Error("네트워크 오류가 발생했습니다.");
+  }
+};
+
+// 3. 안 읽은 알림 개수
+export const getUnreadNotificationCount = async (): Promise<number> => {
+  try {
+    const response = await apiClient.get<number>(
+      "/api/notifications/me/unread-count"
+    );
+    return response.data;
+  } catch (error) {
+    console.error("API Error in getUnreadNotificationCount:", error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.message || "알림 개수 조회 중 오류가 발생했습니다."
+      );
+    }
+    throw new Error("네트워크 오류가 발생했습니다.");
   }
 };

@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   TextInput,
   Keyboard,
-  Animated,
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,10 +17,12 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import RenderPost from "./RenderPost";
 import { usePosts } from "@/components/hooks/postQuery";
 import { useAuth } from "@/components/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 export default function BoardScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useTranslation();
 
   const [showSearch, setShowSearch] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -48,9 +49,6 @@ export default function BoardScreen() {
     refetch,
   } = usePosts(searchKeyword, isAuthenticated);
 
-  console.log("🔥 [BoardScreen] isLoading:", isLoading);
-  console.log("🔥 [BoardScreen] Raw Data:", JSON.stringify(data, null, 2));
-
   const posts = data?.pages.flatMap((page) => page.items) ?? [];
 
   const handleSearchPress = () => {
@@ -67,30 +65,22 @@ export default function BoardScreen() {
   };
 
   const handleWritePress = () => {
-    // 1. 로그인 정보가 아예 없을 때 (방어 코드)
     if (!user) {
-      Alert.alert("알림", "로그인이 필요합니다.");
+      Alert.alert(t("common.alert"), t("auth.loginRequired"));
       return;
     }
 
-    // 2. 학교 인증 안 된 유저 ('guest' 등) 차단
-    // 백엔드 Enum이 소문자 'kumoh' 이므로 정확히 비교해야 함
     if (user.role !== "kumoh" && user.role !== "admin") {
-      Alert.alert(
-        "권한 없음",
-        "게시글을 작성하려면 금오공대 학생 인증이 필요합니다.\n인증하러 가시겠습니까?",
-        [
-          { text: "취소", style: "cancel" },
-          {
-            text: "인증하기",
-            onPress: () => navigation.navigate("SchoolAuth"), // 학교 인증 화면으로 납치
-          },
-        ]
-      );
+      Alert.alert(t("board.noPermission"), t("board.authRequired"), [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("board.authenticate"),
+          onPress: () => navigation.navigate("SchoolAuth"),
+        },
+      ]);
       return;
     }
 
-    // 3. 인증된 유저(kumoh, admin)는 글쓰기 화면으로 통과!
     navigation.navigate("QuestionWrite");
   };
 
@@ -125,7 +115,7 @@ export default function BoardScreen() {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>게시글을 불러오는 중...</Text>
+        <Text style={styles.loadingText}>{t("board.loading")}</Text>
       </View>
     );
   }
@@ -138,20 +128,13 @@ export default function BoardScreen() {
     );
   }
 
-  if (!isAuthenticated || (user && !user.usernameSet)) {
-    console.log("🚫 [BoardScreen] Auth check failed:", {
-      isAuthenticated,
-      user,
-    });
-  }
-
   if (isError) {
     return (
       <View style={[styles.container, styles.centered]}>
         <Ionicons name="alert-circle-outline" size={48} color="#FF3B30" />
-        <Text style={styles.errorText}>게시글을 불러오는데 실패했습니다.</Text>
+        <Text style={styles.errorText}>{t("board.loadError")}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
-          <Text style={styles.retryButtonText}>다시 시도</Text>
+          <Text style={styles.retryButtonText}>{t("common.retry")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -162,7 +145,7 @@ export default function BoardScreen() {
       <View style={styles.header}>
         {!showSearch ? (
           <>
-            <Text style={styles.headerTitle}>게시판</Text>
+            <Text style={styles.headerTitle}>{t("board.title")}</Text>
             <TouchableOpacity onPress={handleSearchPress}>
               <Ionicons name="search-outline" size={24} color="#333" />
             </TouchableOpacity>
@@ -179,7 +162,7 @@ export default function BoardScreen() {
               <TextInput
                 ref={searchInputRef}
                 style={styles.searchInput}
-                placeholder="게시글 검색..."
+                placeholder={t("board.searchPlaceholder")}
                 placeholderTextColor="#999"
                 value={inputValue}
                 onChangeText={setInputValue}
@@ -209,7 +192,8 @@ export default function BoardScreen() {
         <View style={styles.searchResultHeader}>
           <Ionicons name="search" size={16} color="#666" />
           <Text style={styles.searchResultText}>
-            '{searchKeyword}' 검색 결과 ({posts.length}개)
+            '{searchKeyword}' {t("board.searchResults")} ({posts.length}
+            {t("board.count")})
           </Text>
         </View>
       )}
@@ -227,11 +211,13 @@ export default function BoardScreen() {
           <View style={styles.emptyContainer}>
             <Ionicons name="document-text-outline" size={48} color="#C7C7CC" />
             <Text style={styles.emptyText}>
-              {searchKeyword ? "검색 결과가 없습니다" : "게시글이 없습니다."}
+              {searchKeyword
+                ? t("board.noSearchResults")
+                : t("board.noResults")}
             </Text>
             {searchKeyword && (
               <Text style={styles.emptySubText}>
-                다른 검색어로 시도해보세요
+                {t("board.tryOtherKeyword")}
               </Text>
             )}
           </View>

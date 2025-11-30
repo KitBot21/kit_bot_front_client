@@ -6,21 +6,37 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
   Platform,
   FlatList,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/components/contexts/AuthContext";
 import { useMyPosts } from "@/components/hooks/postQuery";
 import { Post } from "@/components/api/types/APITypes/postTypes";
 import { useGoogleAuth } from "@/components/hooks/useGoogleAuth";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useTranslation } from "react-i18next";
+
+import {
+  useNoticeKeywords,
+  useMyKeywords,
+  useToggleKeyword,
+} from "@/components/hooks/useNoticeKeywords";
+import { useNavigation } from "expo-router";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/App";
 
 export default function MyPageScreen() {
+  const router = useRouter();
   const { user, updateUser } = useAuth();
   const { signOut } = useGoogleAuth();
-  // --- React Query Hook 사용 ---
+  const { t } = useTranslation();
+
+  const navigate =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   const {
     data,
     fetchNextPage,
@@ -30,52 +46,54 @@ export default function MyPageScreen() {
     refetch,
   } = useMyPosts();
 
-  // 모든 페이지의 데이터를 하나의 배열로 합침
+  const { data: noticeKeywords, isLoading: isKeywordsLoading } =
+    useNoticeKeywords();
+  const { data: myKeywords } = useMyKeywords();
+  const { mutate: toggleKeyword, isPending: isToggling } = useToggleKeyword();
+
   const myPosts = data?.pages.flatMap((page) => page.content) ?? [];
 
-  // --- 기존 상태 관리 (닉네임, 키워드) ---
   const [isEditing, setIsEditing] = useState(false);
   const [newNickname, setNewNickname] = useState(user?.username || "");
-  const [keywordInput, setKeywordInput] = useState("");
-  const [keywords, setKeywords] = useState<string[]>(["React Native", "취업"]);
 
-  // --- 핸들러 함수들 (기존 유지) ---
+  const isKeywordEnabled = (keyword: string) => {
+    if (!myKeywords) return false;
+    const found = myKeywords.find((item) => item.keyword === keyword);
+    return found?.enabled ?? false;
+  };
+
+  const handleToggleKeyword = (keyword: string) => {
+    if (isToggling) return;
+    toggleKeyword(keyword);
+  };
+
   const handleSaveNickname = async () => {
     if (!newNickname.trim()) return;
     try {
       if (user) {
         await updateUser({ ...user, username: newNickname });
         setIsEditing(false);
-        Alert.alert("성공", "닉네임이 변경되었습니다.");
+        Alert.alert(t("common.confirm"), t("mypage.nicknameChanged"));
       }
     } catch (error) {
-      Alert.alert("오류", "실패했습니다.");
+      Alert.alert(t("common.error"), t("common.failed"));
     }
-  };
-
-  const handleAddKeyword = () => {
-    const trimmed = keywordInput.trim();
-    if (!trimmed) return;
-    if (keywords.includes(trimmed)) {
-      Alert.alert("알림", "이미 등록된 키워드입니다.");
-      return;
-    }
-    setKeywords([...keywords, trimmed]);
-    setKeywordInput("");
-  };
-
-  const handleRemoveKeyword = (keyword: string) => {
-    setKeywords(keywords.filter((k) => k !== keyword));
   };
 
   const handleLogout = () => {
-    Alert.alert("로그아웃", "정말 로그아웃 하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      { text: "로그아웃", style: "destructive", onPress: signOut },
+    Alert.alert(t("mypage.logout"), t("mypage.logoutConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("mypage.logout"),
+        style: "destructive",
+        onPress: async () => {
+          await signOut();
+          navigate.replace("MainTabs");
+        },
+      },
     ]);
   };
 
-  // --- 게시글 렌더링 컴포넌트 ---
   const renderPostItem = ({ item }: { item: Post }) => (
     <TouchableOpacity style={styles.postCard}>
       <View style={styles.titleRow}>
@@ -104,7 +122,6 @@ export default function MyPageScreen() {
     </TouchableOpacity>
   );
 
-  // --- ListHeaderComponent (기존 프로필 + 키워드 + 메뉴 영역) ---
   const renderHeader = () => (
     <View>
       {/* 1. 프로필 섹션 */}
@@ -125,19 +142,21 @@ export default function MyPageScreen() {
                 onPress={handleSaveNickname}
                 style={styles.saveButton}
               >
-                <Text style={styles.saveButtonText}>저장</Text>
+                <Text style={styles.saveButtonText}>{t("common.save")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setIsEditing(false)}
                 style={styles.cancelButton}
               >
-                <Text style={styles.cancelButtonText}>취소</Text>
+                <Text style={styles.cancelButtonText}>
+                  {t("common.cancel")}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.displayRow}>
               <Text style={styles.nicknameText}>
-                {user?.username || "닉네임 없음"}
+                {user?.username || t("mypage.nicknameEmpty")}
               </Text>
               <TouchableOpacity
                 onPress={() => setIsEditing(true)}
@@ -156,33 +175,46 @@ export default function MyPageScreen() {
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Ionicons name="notifications-outline" size={20} color="#333" />
-          <Text style={styles.sectionTitle}>관심 키워드 구독</Text>
+          <Text style={styles.sectionTitle}>
+            {t("mypage.keywordSubscription")}
+          </Text>
         </View>
-        <Text style={styles.sectionDesc}>
-          등록한 키워드가 포함된 글이 올라오면 알림을 받을 수 있어요.
-        </Text>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.keywordInput}
-            placeholder="키워드 입력"
-            value={keywordInput}
-            onChangeText={setKeywordInput}
-            onSubmitEditing={handleAddKeyword}
-          />
-          <TouchableOpacity onPress={handleAddKeyword} style={styles.addButton}>
-            <Ionicons name="add" size={24} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.keywordList}>
-          {keywords.map((keyword, index) => (
-            <View key={index} style={styles.keywordChip}>
-              <Text style={styles.keywordText}>#{keyword}</Text>
-              <TouchableOpacity onPress={() => handleRemoveKeyword(keyword)}>
-                <Ionicons name="close-circle" size={16} color="#007AFF" />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+        <Text style={styles.sectionDesc}>{t("mypage.keywordDesc")}</Text>
+
+        {isKeywordsLoading ? (
+          <ActivityIndicator style={{ marginVertical: 20 }} />
+        ) : (
+          <View style={styles.keywordList}>
+            {noticeKeywords?.map((keyword) => {
+              const enabled = isKeywordEnabled(keyword.key);
+              return (
+                <TouchableOpacity
+                  key={keyword.key}
+                  style={[
+                    styles.keywordChip,
+                    enabled && styles.keywordChipActive,
+                  ]}
+                  onPress={() => handleToggleKeyword(keyword.key)}
+                  disabled={isToggling}
+                >
+                  <Text
+                    style={[
+                      styles.keywordText,
+                      enabled && styles.keywordTextActive,
+                    ]}
+                  >
+                    {t(`keywords.${keyword.key}`)}
+                  </Text>
+                  <Ionicons
+                    name={enabled ? "checkmark-circle" : "add-circle-outline"}
+                    size={18}
+                    color={enabled ? "#FFFFFF" : "#007AFF"}
+                  />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       <View style={styles.divider} />
@@ -191,7 +223,7 @@ export default function MyPageScreen() {
       <View style={styles.menuList}>
         <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
           <Text style={[styles.menuItemText, { color: "#FF3B30" }]}>
-            로그아웃
+            {t("mypage.logout")}
           </Text>
           <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
         </TouchableOpacity>
@@ -203,7 +235,7 @@ export default function MyPageScreen() {
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Ionicons name="document-text-outline" size={20} color="#333" />
-          <Text style={styles.sectionTitle}>내가 쓴 글</Text>
+          <Text style={styles.sectionTitle}>{t("mypage.myPosts")}</Text>
         </View>
       </View>
     </View>
@@ -232,7 +264,7 @@ export default function MyPageScreen() {
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>작성한 게시글이 없습니다.</Text>
+              <Text style={styles.emptyText}>{t("mypage.noPosts")}</Text>
             </View>
           ) : (
             <ActivityIndicator style={{ marginTop: 20 }} />
@@ -247,9 +279,7 @@ export default function MyPageScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
-  // ... 기존 스타일 유지 ...
 
-  // 새로 추가된 게시글 카드 스타일
   postCard: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
@@ -289,11 +319,9 @@ const styles = StyleSheet.create({
   statItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   statText: { fontSize: 12, color: "#8E8E93" },
 
-  // Empty State
   emptyContainer: { alignItems: "center", padding: 30 },
   emptyText: { color: "#8E8E93" },
 
-  // 기존 스타일들 (복붙해서 사용하세요)
   profileSection: {
     alignItems: "center",
     paddingVertical: 32,
@@ -333,42 +361,32 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 18, fontWeight: "600", color: "#333" },
   sectionDesc: { fontSize: 13, color: "#8E8E93", marginBottom: 16 },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  keywordInput: {
-    flex: 1,
-    height: 44,
-    backgroundColor: "#F5F5F5",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 14,
-    marginRight: 8,
-    color: "#333",
-  },
-  addButton: {
-    width: 44,
-    height: 44,
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  keywordList: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+
+  keywordList: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   keywordChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E3F2FD",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: "#F5F5F5",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#BBDEFB",
+    borderColor: "#E0E0E0",
     gap: 6,
   },
-  keywordText: { fontSize: 14, color: "#007AFF", fontWeight: "500" },
+  keywordChipActive: {
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
+  },
+  keywordText: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "500",
+  },
+  keywordTextActive: {
+    color: "#FFFFFF",
+  },
+
   menuList: { paddingHorizontal: 16 },
   menuItem: {
     flexDirection: "row",

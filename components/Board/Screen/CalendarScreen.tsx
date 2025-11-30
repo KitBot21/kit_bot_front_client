@@ -1,4 +1,3 @@
-// src/screens/CalendarScreen.tsx
 import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
@@ -11,64 +10,114 @@ import {
   Modal,
   TextInput,
   Platform,
-  Switch, // 📍 스위치 추가
+  Switch,
 } from "react-native";
 import { Calendar, LocaleConfig } from "react-native-calendars";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import DateTimePicker from "@react-native-community/datetimepicker"; // 📍 시간 선택기 추가
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useTranslation } from "react-i18next";
 
 import {
   fetchGoogleEvents,
   createGoogleEvent,
-} from "@/components/api/services/chatApi"; // 경로 확인 필요
-import { GoogleCalendarEvent } from "@/components/api/types/APITypes/googleCalendarTypes"; // 경로 확인 필요
-
-// 한국어 설정 (기존과 동일)
-LocaleConfig.locales["kr"] = {
-  monthNames: [
-    "1월",
-    "2월",
-    "3월",
-    "4월",
-    "5월",
-    "6월",
-    "7월",
-    "8월",
-    "9월",
-    "10월",
-    "11월",
-    "12월",
-  ],
-  monthNamesShort: [
-    "1월",
-    "2월",
-    "3월",
-    "4월",
-    "5월",
-    "6월",
-    "7월",
-    "8월",
-    "9월",
-    "10월",
-    "11월",
-    "12월",
-  ],
-  dayNames: [
-    "일요일",
-    "월요일",
-    "화요일",
-    "수요일",
-    "목요일",
-    "금요일",
-    "토요일",
-  ],
-  dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
-  today: "오늘",
-};
-LocaleConfig.defaultLocale = "kr";
+} from "@/components/api/services/chatApi";
+import { GoogleCalendarEvent } from "@/components/api/types/APITypes/googleCalendarTypes";
 
 export default function CalendarScreen() {
+  const { t, i18n } = useTranslation();
+
+  // 언어에 따른 달력 로케일 설정
+  useEffect(() => {
+    if (i18n.language === "ko") {
+      LocaleConfig.locales["kr"] = {
+        monthNames: [
+          "1월",
+          "2월",
+          "3월",
+          "4월",
+          "5월",
+          "6월",
+          "7월",
+          "8월",
+          "9월",
+          "10월",
+          "11월",
+          "12월",
+        ],
+        monthNamesShort: [
+          "1월",
+          "2월",
+          "3월",
+          "4월",
+          "5월",
+          "6월",
+          "7월",
+          "8월",
+          "9월",
+          "10월",
+          "11월",
+          "12월",
+        ],
+        dayNames: [
+          "일요일",
+          "월요일",
+          "화요일",
+          "수요일",
+          "목요일",
+          "금요일",
+          "토요일",
+        ],
+        dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
+        today: "오늘",
+      };
+      LocaleConfig.defaultLocale = "kr";
+    } else {
+      LocaleConfig.locales["en"] = {
+        monthNames: [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ],
+        monthNamesShort: [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ],
+        dayNames: [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ],
+        dayNamesShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+        today: "Today",
+      };
+      LocaleConfig.defaultLocale = "en";
+    }
+  }, [i18n.language]);
+
   const [googleToken, setGoogleToken] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -78,18 +127,15 @@ export default function CalendarScreen() {
   >({});
   const [loading, setLoading] = useState(false);
 
-  // 모달 관련 상태
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState("");
 
-  // 📍 시간 및 알림 관련 상태 추가
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
-  const [enableNotification, setEnableNotification] = useState(false); // 알림 여부
+  const [enableNotification, setEnableNotification] = useState(false);
 
-  // 1. 토큰 가져오기 (기존 동일)
   useEffect(() => {
     const getToken = async () => {
       const token = await AsyncStorage.getItem("googleAccessToken");
@@ -98,7 +144,6 @@ export default function CalendarScreen() {
     getToken();
   }, []);
 
-  // 2. 데이터 로드 (기존 동일)
   useEffect(() => {
     if (googleToken) {
       loadCalendarData();
@@ -110,7 +155,6 @@ export default function CalendarScreen() {
     setLoading(true);
     try {
       const currentYear = new Date().getFullYear();
-      // 앞뒤로 1년치 가져오기 (범위 넉넉하게)
       const events = await fetchGoogleEvents(
         googleToken,
         `${currentYear}-01-01T00:00:00Z`,
@@ -133,14 +177,12 @@ export default function CalendarScreen() {
     }
   };
 
-  // 📍 시간 포맷 헬퍼 함수 (Date -> "14:00")
   const formatTimeForApi = (date: Date) => {
     const hours = date.getHours().toString().padStart(2, "0");
     const minutes = date.getMinutes().toString().padStart(2, "0");
     return `${hours}:${minutes}`;
   };
 
-  // 📍 시간 선택 핸들러
   const onChangeStart = (event: any, selectedDate?: Date) => {
     if (Platform.OS === "android") setShowStartPicker(false);
     if (selectedDate) setStartTime(selectedDate);
@@ -151,47 +193,42 @@ export default function CalendarScreen() {
     if (selectedDate) setEndTime(selectedDate);
   };
 
-  // 3. 일정 추가 핸들러 (수정됨)
   const handleAddEvent = async () => {
     if (!newTitle.trim()) {
-      Alert.alert("알림", "내용을 입력해주세요.");
+      Alert.alert(t("common.alert"), t("calendar.enterContent"));
       return;
     }
     if (!googleToken) {
-      Alert.alert("오류", "로그인이 필요합니다.");
+      Alert.alert(t("common.error"), t("auth.loginRequired"));
       return;
     }
 
     try {
       setLoading(true);
 
-      // 📍 API 호출 시 시간과 알림 정보 전달
       await createGoogleEvent(googleToken, {
         title: newTitle,
         date: selectedDate,
-        startTime: formatTimeForApi(startTime), // "14:00"
-        endTime: formatTimeForApi(endTime), // "15:00"
-        reminders: enableNotification ? [10] : [], // 알림 켜져있으면 10분전 알림
+        startTime: formatTimeForApi(startTime),
+        endTime: formatTimeForApi(endTime),
+        reminders: enableNotification ? [10] : [],
       });
 
-      Alert.alert("성공", "일정이 등록되었습니다.");
+      Alert.alert(t("common.success"), t("calendar.eventCreated"));
 
-      // 초기화
       setNewTitle("");
       setEnableNotification(false);
       setModalVisible(false);
 
-      // 목록 새로고침
       await loadCalendarData();
     } catch (error) {
       console.error(error);
-      Alert.alert("실패", "일정 등록 중 오류가 발생했습니다.");
+      Alert.alert(t("common.failed"), t("calendar.eventCreateError"));
     } finally {
       setLoading(false);
     }
   };
 
-  // 4. 마커 계산 (기존 동일)
   const markedDates = useMemo(() => {
     const marks: any = {};
     Object.keys(eventsMap).forEach((date) => {
@@ -209,16 +246,20 @@ export default function CalendarScreen() {
   const selectedEvents = eventsMap[selectedDate] || [];
 
   const formatDisplayTime = (isoString?: string) => {
-    if (!isoString) return "종일";
-    return new Date(isoString).toLocaleTimeString("ko-KR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    if (!isoString) return t("calendar.allDay");
+    return new Date(isoString).toLocaleTimeString(
+      i18n.language === "ko" ? "ko-KR" : "en-US",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
   };
 
   return (
     <View style={styles.container}>
       <Calendar
+        key={i18n.language}
         style={styles.calendar}
         theme={{
           todayTextColor: "#007AFF",
@@ -226,14 +267,14 @@ export default function CalendarScreen() {
           textMonthFontWeight: "bold",
           selectedDayBackgroundColor: "#007AFF",
         }}
-        monthFormat={"yyyy년 MM월"}
+        monthFormat={i18n.language === "ko" ? "yyyy년 MM월" : "MMMM yyyy"}
         markedDates={markedDates}
         onDayPress={(day) => setSelectedDate(day.dateString)}
       />
 
       <View style={styles.listContainer}>
         <Text style={styles.headerTitle}>
-          {selectedDate} 일정 ({selectedEvents.length})
+          {selectedDate} {t("calendar.events")} ({selectedEvents.length})
         </Text>
 
         {loading ? (
@@ -249,7 +290,7 @@ export default function CalendarScreen() {
             contentContainerStyle={{ paddingBottom: 80 }}
             ListEmptyComponent={
               <View style={styles.emptyView}>
-                <Text style={styles.emptyText}>일정이 없습니다.</Text>
+                <Text style={styles.emptyText}>{t("calendar.noEvents")}</Text>
               </View>
             }
             renderItem={({ item }) => (
@@ -270,7 +311,6 @@ export default function CalendarScreen() {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => {
-          // 모달 열 때 시간 현재 시간으로 초기화
           const now = new Date();
           setStartTime(now);
           const oneHourLater = new Date(now);
@@ -282,7 +322,6 @@ export default function CalendarScreen() {
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
 
-      {/* 📍 일정 입력 모달 (UI 수정됨) */}
       <Modal
         visible={modalVisible}
         transparent={true}
@@ -291,26 +330,25 @@ export default function CalendarScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>새 일정 등록</Text>
+            <Text style={styles.modalTitle}>{t("calendar.newEvent")}</Text>
             <Text style={{ marginBottom: 15, color: "#666" }}>
-              날짜: {selectedDate}
+              {t("calendar.date")}: {selectedDate}
             </Text>
 
             <TextInput
               style={styles.input}
-              placeholder="일정 내용을 입력하세요"
+              placeholder={t("calendar.eventPlaceholder")}
               value={newTitle}
               onChangeText={setNewTitle}
             />
 
-            {/* 📍 시간 선택 UI */}
             <View style={styles.timeRow}>
               <TouchableOpacity
                 onPress={() => setShowStartPicker(true)}
                 style={styles.timeBtn}
               >
                 <Text style={styles.timeLabel}>
-                  시작: {formatTimeForApi(startTime)}
+                  {t("calendar.start")}: {formatTimeForApi(startTime)}
                 </Text>
               </TouchableOpacity>
               <Ionicons name="arrow-forward" size={16} color="#999" />
@@ -319,14 +357,13 @@ export default function CalendarScreen() {
                 style={styles.timeBtn}
               >
                 <Text style={styles.timeLabel}>
-                  종료: {formatTimeForApi(endTime)}
+                  {t("calendar.end")}: {formatTimeForApi(endTime)}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* 📍 알림 스위치 */}
             <View style={styles.switchContainer}>
-              <Text style={{ fontSize: 15 }}>10분 전 알림 받기</Text>
+              <Text style={{ fontSize: 15 }}>{t("calendar.reminder")}</Text>
               <Switch
                 trackColor={{ false: "#767577", true: "#81b0ff" }}
                 thumbColor={enableNotification ? "#007AFF" : "#f4f3f4"}
@@ -335,19 +372,16 @@ export default function CalendarScreen() {
               />
             </View>
 
-            {/* DateTimePicker (Android/iOS 대응) */}
-            {(showStartPicker || (Platform.OS === "ios" && modalVisible)) &&
-              Platform.OS === "android" && (
-                <DateTimePicker
-                  value={startTime}
-                  mode="time"
-                  is24Hour={true}
-                  display="default"
-                  onChange={onChangeStart}
-                />
-              )}
+            {showStartPicker && Platform.OS === "android" && (
+              <DateTimePicker
+                value={startTime}
+                mode="time"
+                is24Hour={true}
+                display="default"
+                onChange={onChangeStart}
+              />
+            )}
 
-            {/* 안드로이드는 조건부 렌더링, iOS는 모달 안에 커스텀하게 넣어야 함 (여기선 안드로이드 기준 심플 처리) */}
             {showEndPicker && Platform.OS === "android" && (
               <DateTimePicker
                 value={endTime}
@@ -363,13 +397,13 @@ export default function CalendarScreen() {
                 style={[styles.modalBtn, { backgroundColor: "#E5E5E5" }]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text>취소</Text>
+                <Text>{t("common.cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: "#007AFF" }]}
                 onPress={handleAddEvent}
               >
-                <Text style={{ color: "white" }}>저장</Text>
+                <Text style={{ color: "white" }}>{t("common.save")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -439,8 +473,6 @@ const styles = StyleSheet.create({
   },
   modalButtons: { flexDirection: "row", gap: 10, width: "100%", marginTop: 20 },
   modalBtn: { flex: 1, padding: 12, borderRadius: 8, alignItems: "center" },
-
-  // 📍 추가된 스타일
   timeRow: {
     flexDirection: "row",
     alignItems: "center",
