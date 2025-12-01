@@ -1,16 +1,14 @@
-// PostDetail.tsx
 import { useState, useRef } from "react";
 import {
   View,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   FlatList,
   Text,
   TextInput,
   TouchableOpacity,
   Alert,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PostContent from "./PostContent";
@@ -28,6 +26,8 @@ import { usePost } from "@/components/hooks/postQuery";
 import { useAuth } from "@/components/contexts/AuthContext";
 import { useNavigation } from "expo-router";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { KeyboardStickyView } from "react-native-keyboard-controller";
+
 type PostDetailRouteProp = RouteProp<RootStackParamList, "PostDetail">;
 
 function CommentItemWithReplies({
@@ -56,7 +56,6 @@ export default function PostDetail() {
   const postId = route.params?.postId;
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  console.log("PostDetail - postId:", postId);
   const { user } = useAuth();
   const canWrite = user?.role === "kumoh" || user?.role === "admin";
   const inputRef = useRef<TextInput>(null);
@@ -84,6 +83,7 @@ export default function PostDetail() {
         postId,
         content: text,
         parentId: replyTo,
+        authorId: user?.id,
       },
       {
         onSuccess: () => {
@@ -148,7 +148,6 @@ export default function PostDetail() {
     );
   };
 
-  // 로딩 상태
   if (isPostLoading || isCommentsLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -158,7 +157,6 @@ export default function PostDetail() {
     );
   }
 
-  // 에러 상태
   if (postError || commentsError) {
     const errorMessage =
       postError?.message || commentsError?.message || "알 수 없는 오류";
@@ -183,7 +181,6 @@ export default function PostDetail() {
     );
   }
 
-  // 게시글이 없는 경우
   if (!post) {
     return (
       <View style={styles.errorContainer}>
@@ -195,11 +192,7 @@ export default function PostDetail() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-    >
+    <View style={styles.container}>
       <FlatList
         data={comments}
         renderItem={({ item }) => (
@@ -214,31 +207,41 @@ export default function PostDetail() {
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
       />
 
-      <CommentInput
-        ref={inputRef}
-        onSubmit={handleAddComment}
-        isSubmitting={createCommentMutation.isPending}
-        replyTo={replyAuthor}
-        onCancelReply={() => {
-          setReplyTo(null);
-          setReplyAuthor("");
+      <KeyboardStickyView
+        offset={{
+          closed: 0,
+          opened: Platform.OS === "ios" ? 20 : 0,
         }}
-        placeholder={
-          canWrite ? "댓글을 입력하세요..." : "학교 인증이 필요한 서비스입니다."
-        }
-        // 권한 없으면 입력 비활성화 (CommentInput 내부 TextInput에 editable={editable} 전달 필요)
-        editable={canWrite}
-      />
-    </KeyboardAvoidingView>
+      >
+        <CommentInput
+          ref={inputRef}
+          onSubmit={handleAddComment}
+          isSubmitting={createCommentMutation.isPending}
+          replyTo={replyAuthor}
+          onCancelReply={() => {
+            setReplyTo(null);
+            setReplyAuthor("");
+          }}
+          placeholder={
+            canWrite
+              ? "댓글을 입력하세요..."
+              : "학교 인증이 필요한 서비스입니다."
+          }
+          editable={canWrite}
+        />
+      </KeyboardStickyView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffffff",
+    backgroundColor: "#ffffff",
   },
   listContent: {
     flexGrow: 1,

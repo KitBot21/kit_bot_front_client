@@ -11,12 +11,14 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/App";
 import { useGoogleAuth } from "../hooks/useGoogleAuth";
+import { useTranslation } from "react-i18next";
 
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { signIn } = useGoogleAuth();
+  const { t } = useTranslation();
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -35,10 +37,8 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <View style={styles.content}>
         <Ionicons name="lock-closed-outline" size={80} color="#007AFF" />
-        <Text style={styles.title}>로그인이 필요합니다</Text>
-        <Text style={styles.subtitle}>
-          게시판을 이용하려면{"\n"}Google 계정으로 로그인해주세요
-        </Text>
+        <Text style={styles.title}>{t("auth.loginRequired")}</Text>
+        <Text style={styles.subtitle}>{t("auth.loginSubtitle")}</Text>
 
         <TouchableOpacity
           style={[styles.googleButton, loading && styles.googleButtonDisabled]}
@@ -55,13 +55,15 @@ export default function LoginScreen() {
                 color="#FFFFFF"
                 style={styles.googleIcon}
               />
-              <Text style={styles.googleButtonText}>Google로 로그인</Text>
+              <Text style={styles.googleButtonText}>
+                {t("auth.googleLogin")}
+              </Text>
             </>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-          <Text style={styles.cancelButtonText}>취소</Text>
+          <Text style={styles.cancelButtonText}>{t("common.cancel")}</Text>
         </TouchableOpacity>
       </View>
     </View>

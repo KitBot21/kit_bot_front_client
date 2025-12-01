@@ -7,11 +7,13 @@ import { useAuth } from "../contexts/AuthContext";
 import { RootStackParamList } from "@/App";
 import { useNavigation } from "expo-router";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from "react-i18next";
 
 const Tab = createMaterialTopTabNavigator();
 
 export function MainTabs() {
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
 
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -45,18 +47,20 @@ export function MainTabs() {
       }}
     >
       <Tab.Screen
-        name="챗봇"
+        name="Chatbot"
         component={ChatbotScreen}
         options={{
+          tabBarLabel: t("tabs.chatbot"),
           tabBarIcon: ({ color }) => (
             <Ionicons name="chatbubble" size={20} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="게시판"
+        name="Board"
         component={BoardScreen}
         options={{
+          tabBarLabel: t("tabs.board"),
           tabBarIcon: ({ color }) => (
             <FontAwesome name="list-alt" size={20} color={color} />
           ),

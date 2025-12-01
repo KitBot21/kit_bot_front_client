@@ -15,6 +15,7 @@ import {
   useReportComment,
   useDeleteComment,
 } from "@/components/hooks/commentQuery";
+import { useTranslation } from "react-i18next";
 
 interface CommentItemProps {
   comment: CommentResponseDTO;
@@ -29,6 +30,7 @@ export default function CommentItem({
   onAdoptAnswer,
   onReplyPress,
 }: CommentItemProps) {
+  const { t } = useTranslation();
   const [showReplies, setShowReplies] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -57,8 +59,8 @@ export default function CommentItem({
       {
         onSuccess: () => {
           setShowConfirmModal(false);
-          Alert.alert("신고 완료", "신고가 완료되었습니다.", [
-            { text: "확인" },
+          Alert.alert(t("comment.reportComplete"), t("comment.reportSuccess"), [
+            { text: t("common.confirm") },
           ]);
         },
       }
@@ -67,18 +69,24 @@ export default function CommentItem({
 
   const handleDeleteComment = () => {
     setShowMenuModal(false);
-    Alert.alert("댓글 삭제", "정말 이 댓글을 삭제하시겠습니까?", [
-      { text: "취소", style: "cancel" },
+    Alert.alert(t("comment.deleteComment"), t("comment.deleteConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "삭제",
+        text: t("common.delete"),
         style: "destructive",
         onPress: () => {
           deleteCommentMutation.mutate(comment.id, {
             onSuccess: () => {
-              Alert.alert("삭제 완료", "댓글이 삭제되었습니다.");
+              Alert.alert(
+                t("comment.deleteComplete"),
+                t("comment.deleteSuccess")
+              );
             },
             onError: (error: Error) => {
-              Alert.alert("오류", error.message || "댓글 삭제에 실패했습니다.");
+              Alert.alert(
+                t("common.error"),
+                error.message || t("comment.deleteFailed")
+              );
             },
           });
         },
@@ -88,20 +96,23 @@ export default function CommentItem({
 
   const handleDeleteReply = (replyId: string) => {
     setShowReplyMenuModal(false);
-    Alert.alert("대댓글 삭제", "정말 이 대댓글을 삭제하시겠습니까?", [
-      { text: "취소", style: "cancel" },
+    Alert.alert(t("comment.deleteReply"), t("comment.deleteReplyConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "삭제",
+        text: t("common.delete"),
         style: "destructive",
         onPress: () => {
           deleteCommentMutation.mutate(replyId, {
             onSuccess: () => {
-              Alert.alert("삭제 완료", "대댓글이 삭제되었습니다.");
+              Alert.alert(
+                t("comment.deleteComplete"),
+                t("comment.deleteReplySuccess")
+              );
             },
             onError: (error: Error) => {
               Alert.alert(
-                "오류",
-                error.message || "대댓글 삭제에 실패했습니다."
+                t("common.error"),
+                error.message || t("comment.deleteReplyFailed")
               );
             },
           });
@@ -140,7 +151,7 @@ export default function CommentItem({
 
         <View style={styles.commentActions}>
           <TouchableOpacity style={styles.actionButton} onPress={onReplyPress}>
-            <Text style={styles.actionText}>답글 달기</Text>
+            <Text style={styles.actionText}>{t("comment.reply")}</Text>
           </TouchableOpacity>
 
           <View style={styles.rightActions}>
@@ -186,7 +197,9 @@ export default function CommentItem({
               color="#007AFF"
             />
             <Text style={styles.showRepliesText}>
-              {showReplies ? "답글 숨기기" : `답글 ${replies.length}개 보기`}
+              {showReplies
+                ? t("comment.hideReplies")
+                : t("comment.showReplies", { count: replies.length })}
             </Text>
           </TouchableOpacity>
         )}
@@ -211,7 +224,6 @@ export default function CommentItem({
                 <Text style={styles.replyTime}>
                   {new Date(reply.createdAt).toLocaleDateString()}
                 </Text>
-                {/* 대댓글 메뉴 버튼 */}
                 <TouchableOpacity
                   style={styles.replyMenuButton}
                   onPress={() => handleReplyMenuPress(reply.id)}
@@ -244,14 +256,18 @@ export default function CommentItem({
                   onPress={handleDeleteComment}
                 >
                   <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                  <Text style={styles.deleteOptionText}>삭제</Text>
+                  <Text style={styles.deleteOptionText}>
+                    {t("common.delete")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.cancelMenuButton}
                   onPress={() => setShowMenuModal(false)}
                 >
-                  <Text style={styles.cancelMenuText}>취소</Text>
+                  <Text style={styles.cancelMenuText}>
+                    {t("common.cancel")}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -277,14 +293,18 @@ export default function CommentItem({
                   }
                 >
                   <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                  <Text style={styles.deleteOptionText}>삭제</Text>
+                  <Text style={styles.deleteOptionText}>
+                    {t("common.delete")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.cancelMenuButton}
                   onPress={() => setShowReplyMenuModal(false)}
                 >
-                  <Text style={styles.cancelMenuText}>취소</Text>
+                  <Text style={styles.cancelMenuText}>
+                    {t("common.cancel")}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -303,41 +323,61 @@ export default function CommentItem({
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.reportModal}>
-                <Text style={styles.modalTitle}>신고 사유 선택</Text>
+                <Text style={styles.modalTitle}>
+                  {t("comment.selectReportReason")}
+                </Text>
 
                 <TouchableOpacity
                   style={styles.reportOption}
-                  onPress={() => handleSelectReason("스팸/도배")}
+                  onPress={() =>
+                    handleSelectReason(t("comment.reportReasons.spam"))
+                  }
                 >
-                  <Text style={styles.reportOptionText}>스팸/도배</Text>
+                  <Text style={styles.reportOptionText}>
+                    {t("comment.reportReasons.spam")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.reportOption}
-                  onPress={() => handleSelectReason("욕설/비방")}
+                  onPress={() =>
+                    handleSelectReason(t("comment.reportReasons.abuse"))
+                  }
                 >
-                  <Text style={styles.reportOptionText}>욕설/비방</Text>
+                  <Text style={styles.reportOptionText}>
+                    {t("comment.reportReasons.abuse")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.reportOption}
-                  onPress={() => handleSelectReason("음란성")}
+                  onPress={() =>
+                    handleSelectReason(t("comment.reportReasons.inappropriate"))
+                  }
                 >
-                  <Text style={styles.reportOptionText}>음란성</Text>
+                  <Text style={styles.reportOptionText}>
+                    {t("comment.reportReasons.inappropriate")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.reportOption}
-                  onPress={() => handleSelectReason("기타")}
+                  onPress={() =>
+                    handleSelectReason(t("comment.reportReasons.other"))
+                  }
                 >
-                  <Text style={styles.reportOptionText}>기타</Text>
+                  <Text style={styles.reportOptionText}>
+                    {t("comment.reportReasons.other")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={() => setShowReportModal(false)}
                 >
-                  <Text style={styles.cancelButtonText}>취소</Text>
+                  <Text style={styles.cancelButtonText}>
+                    {t("common.cancel")}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -362,10 +402,11 @@ export default function CommentItem({
                   color="#FF3B30"
                   style={styles.confirmIcon}
                 />
-                <Text style={styles.confirmTitle}>정말 신고하시겠습니까?</Text>
+                <Text style={styles.confirmTitle}>
+                  {t("comment.reportConfirmTitle")}
+                </Text>
                 <Text style={styles.confirmDescription}>
-                  신고 후에는 취소할 수 없으며,{"\n"}
-                  허위 신고 시 제재를 받을 수 있습니다.
+                  {t("comment.reportConfirmDescription")}
                 </Text>
 
                 <View style={styles.confirmButtons}>
@@ -373,7 +414,9 @@ export default function CommentItem({
                     style={[styles.confirmButton, styles.cancelConfirmButton]}
                     onPress={() => setShowConfirmModal(false)}
                   >
-                    <Text style={styles.cancelConfirmText}>취소</Text>
+                    <Text style={styles.cancelConfirmText}>
+                      {t("common.cancel")}
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.confirmButton, styles.reportConfirmButton]}
@@ -381,7 +424,9 @@ export default function CommentItem({
                     disabled={reportMutation.isPending}
                   >
                     <Text style={styles.reportConfirmText}>
-                      {reportMutation.isPending ? "신고 중..." : "신고"}
+                      {reportMutation.isPending
+                        ? t("comment.reporting")
+                        : t("comment.report")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -393,6 +438,8 @@ export default function CommentItem({
     </View>
   );
 }
+
+// styles는 동일...
 
 const styles = StyleSheet.create({
   container: {

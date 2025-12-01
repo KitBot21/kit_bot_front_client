@@ -18,11 +18,13 @@ import RenderPost from "./RenderPost";
 import { usePosts } from "@/components/hooks/postQuery";
 import { useAuth } from "@/components/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function BoardScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const [showSearch, setShowSearch] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -226,7 +228,10 @@ export default function BoardScreen() {
         onRefresh={() => refetch()}
       />
 
-      <TouchableOpacity style={styles.fab} onPress={handleWritePress}>
+      <TouchableOpacity
+        style={[styles.fab, { bottom: 16 + insets.bottom }]}
+        onPress={handleWritePress}
+      >
         <Ionicons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
@@ -343,7 +348,6 @@ const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     right: 16,
-    bottom: 16,
     width: 56,
     height: 56,
     borderRadius: 28,

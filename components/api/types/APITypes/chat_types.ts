@@ -7,6 +7,7 @@ export interface SourceDTO {
 // 서버로 보낼 데이터 (Request)
 export interface QueryRequestDTO {
   question: string;
+  appLanguage: string;
 }
 
 // 서버에서 받을 데이터 (Response)

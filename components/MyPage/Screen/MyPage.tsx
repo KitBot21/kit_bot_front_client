@@ -30,7 +30,7 @@ import { RootStackParamList } from "@/App";
 
 export default function MyPageScreen() {
   const router = useRouter();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, isLoading: isAuthLoading } = useAuth();
   const { signOut } = useGoogleAuth();
   const { t } = useTranslation();
 
@@ -94,6 +94,35 @@ export default function MyPageScreen() {
     ]);
   };
 
+  const handleLogin = () => {
+    navigate.navigate("Login");
+  };
+
+  // 로딩 중일 때
+  if (isAuthLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  // 로그인 안 된 상태
+  if (!user) {
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="person-circle-outline" size={100} color="#C7C7CC" />
+        <Text style={styles.loginTitle}>{t("mypage.loginRequired")}</Text>
+        <Text style={styles.loginSubtitle}>{t("mypage.loginDesc")}</Text>
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+          <Ionicons name="logo-google" size={20} color="#FFFFFF" />
+          <Text style={styles.loginButtonText}>{t("mypage.googleLogin")}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // 로그인 된 상태 - 기존 UI
   const renderPostItem = ({ item }: { item: Post }) => (
     <TouchableOpacity style={styles.postCard}>
       <View style={styles.titleRow}>
@@ -128,6 +157,30 @@ export default function MyPageScreen() {
       <View style={styles.profileSection}>
         <Ionicons name="person-circle-outline" size={80} color="#007AFF" />
         <Text style={styles.emailText}>{user?.email || "user@email.com"}</Text>
+
+        {/* role 표시 (학교 인증 상태) */}
+        <View style={styles.roleContainer}>
+          {user?.role === "guest" ? (
+            <TouchableOpacity
+              style={styles.roleChipGuest}
+              onPress={() => navigate.navigate("SchoolAuth")}
+            >
+              <Ionicons name="school-outline" size={14} color="#FF9500" />
+              <Text style={styles.roleTextGuest}>
+                {t("mypage.notVerified")}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color="#FF9500" />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.roleChipVerified}>
+              <Ionicons name="checkmark-circle" size={14} color="#34C759" />
+              <Text style={styles.roleTextVerified}>
+                {t("mypage.verified")}
+              </Text>
+            </View>
+          )}
+        </View>
+
         <View style={styles.nicknameContainer}>
           {isEditing ? (
             <View style={styles.editRow}>
@@ -280,6 +333,44 @@ export default function MyPageScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
 
+  // 로그인 필요 화면
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    padding: 32,
+  },
+  loginTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#333",
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  loginSubtitle: {
+    fontSize: 14,
+    color: "#8E8E93",
+    textAlign: "center",
+    marginBottom: 32,
+    lineHeight: 20,
+  },
+  loginButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 10,
+  },
+  loginButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  // 기존 스타일들
   postCard: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
@@ -328,6 +419,40 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9F9F9",
   },
   emailText: { marginTop: 8, fontSize: 14, color: "#8E8E93" },
+
+  // role 표시 스타일
+  roleContainer: {
+    marginTop: 12,
+  },
+  roleChipGuest: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF3E0",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  roleTextGuest: {
+    fontSize: 12,
+    color: "#FF9500",
+    fontWeight: "500",
+  },
+  roleChipVerified: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  roleTextVerified: {
+    fontSize: 12,
+    color: "#34C759",
+    fontWeight: "500",
+  },
+
   nicknameContainer: { marginTop: 12, minHeight: 40, justifyContent: "center" },
   displayRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   nicknameText: { fontSize: 20, fontWeight: "700", color: "#333" },

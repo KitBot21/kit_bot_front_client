@@ -5,16 +5,18 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Linking,
   ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from "react-i18next";
+import { KeyboardStickyView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { SourceDTO } from "@/components/api/types/APITypes/chat_types";
 import { usePostChatQuery } from "@/components/hooks/usePostChatQuery";
@@ -30,6 +32,9 @@ interface Message {
 }
 
 export default function ChatbotScreen() {
+  const insets = useSafeAreaInsets();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { t } = useTranslation();
@@ -44,6 +49,20 @@ export default function ChatbotScreen() {
   ]);
   const [inputText, setInputText] = useState("");
   const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const { mutate: sendQuery, isPending } = usePostChatQuery({
     onSuccess: (data) => {
@@ -123,7 +142,6 @@ export default function ChatbotScreen() {
             >
               <Ionicons name="calendar-outline" size={16} color="#007AFF" />
               <Text style={styles.calendarButtonText}>
-                {" "}
                 {t("chat.addToCalendar")}
               </Text>
             </TouchableOpacity>
@@ -150,17 +168,14 @@ export default function ChatbotScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-    >
+    <View style={styles.container}>
       <FlatList
         ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messageList}
+        keyboardDismissMode="interactive"
       />
 
       {isPending && (
@@ -170,31 +185,46 @@ export default function ChatbotScreen() {
         </View>
       )}
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={inputText}
-          onChangeText={setInputText}
-          placeholder={t("chat.placeholder")}
-          multiline
-          editable={!isPending}
-        />
-        <TouchableOpacity
+      <KeyboardStickyView
+        offset={{
+          closed: -5,
+          opened: Platform.OS === "ios" ? 20 : 0,
+        }}
+      >
+        <View
           style={[
-            styles.sendButton,
-            (inputText.trim() === "" || isPending) && styles.sendButtonDisabled,
+            styles.inputContainer,
+            {
+              paddingBottom: keyboardVisible ? 12 : Math.max(insets.bottom, 12),
+            },
           ]}
-          onPress={sendMessage}
-          disabled={inputText.trim() === "" || isPending}
         >
-          <Ionicons
-            name="send"
-            size={20}
-            color={inputText.trim() === "" || isPending ? "#ccc" : "#007AFF"}
+          <TextInput
+            style={styles.input}
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder={t("chat.placeholder")}
+            multiline
+            editable={!isPending}
           />
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (inputText.trim() === "" || isPending) &&
+                styles.sendButtonDisabled,
+            ]}
+            onPress={sendMessage}
+            disabled={inputText.trim() === "" || isPending}
+          >
+            <Ionicons
+              name="send"
+              size={20}
+              color={inputText.trim() === "" || isPending ? "#ccc" : "#007AFF"}
+            />
+          </TouchableOpacity>
+        </View>
+      </KeyboardStickyView>
+    </View>
   );
 }
 
@@ -250,7 +280,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#E5E5E5",

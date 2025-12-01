@@ -8,7 +8,7 @@ import {
   CommentCreateRequest,
   CommentResponseDTO,
 } from "../types/APITypes/commentTypes";
-
+import i18n from "@/components/i18n";
 import {
   Post,
   PostsParams,
@@ -67,6 +67,7 @@ export const postChatQuery = async (
 ): Promise<QueryResponseDTO> => {
   const requestData: QueryRequestDTO = {
     question: userQuestion,
+    appLanguage: i18n.language, // 추가
   };
 
   try {

@@ -1,5 +1,4 @@
 import {
-  KeyboardAvoidingView,
   View,
   Text,
   TouchableOpacity,
@@ -16,11 +15,16 @@ import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
 import { useCreatePost } from "@/components/hooks/postQuery";
-const USER_ID = "6908b0ea11c4a31b7f814a5a"; // 임시 사용자 ID
+import { useTranslation } from "react-i18next";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useAuth } from "@/components/contexts/AuthContext";
 
 export default function QuestionWrite() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useTranslation();
+  const { user } = useAuth();
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
@@ -32,18 +36,18 @@ export default function QuestionWrite() {
 
   const handleSubmit = () => {
     if (!title.trim()) {
-      Alert.alert("알림", "제목을 입력해주세요.");
+      Alert.alert(t("common.alert"), t("postWrite.enterTitle"));
       return;
     }
 
     if (!content.trim()) {
-      Alert.alert("알림", "내용을 입력해주세요.");
+      Alert.alert(t("common.alert"), t("postWrite.enterContent"));
       return;
     }
 
     createPost(
       {
-        authorId: USER_ID,
+        authorId: user?.id,
         title: title.trim(),
         content: content.trim(),
       },
@@ -53,10 +57,8 @@ export default function QuestionWrite() {
         },
         onError: (error) => {
           Alert.alert(
-            "오류",
-            error instanceof Error
-              ? error.message
-              : "게시글 작성에 실패했습니다."
+            t("common.error"),
+            error instanceof Error ? error.message : t("postWrite.createFailed")
           );
         },
       }
@@ -72,16 +74,16 @@ export default function QuestionWrite() {
         <TouchableOpacity onPress={onXPress} disabled={isPending}>
           <AntDesign name="close" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>질문 하기</Text>
+        <Text style={styles.headerTitle}>{t("postWrite.title")}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.inputSection}>
-          <Text style={styles.label}>제목</Text>
+          <Text style={styles.label}>{t("postWrite.titleLabel")}</Text>
           <TextInput
             style={styles.titleInput}
-            placeholder="제목을 입력해주세요."
+            placeholder={t("postWrite.titlePlaceholder")}
             placeholderTextColor="#999"
             value={title}
             onChangeText={setTitle}
@@ -93,7 +95,7 @@ export default function QuestionWrite() {
         <View style={styles.inputSection}>
           <TextInput
             style={styles.contentInput}
-            placeholder="kit-bot에게 답을 듣지 못했던 질문들을 질문해세요"
+            placeholder={t("postWrite.contentPlaceholder")}
             placeholderTextColor="#999"
             multiline
             textAlignVertical="top"
@@ -118,7 +120,7 @@ export default function QuestionWrite() {
         ) : (
           <>
             <AntDesign name="edit" size={20} color="#FFFFFF" />
-            <Text style={styles.submitButtonText}>등록하기</Text>
+            <Text style={styles.submitButtonText}>{t("postWrite.submit")}</Text>
           </>
         )}
       </TouchableOpacity>

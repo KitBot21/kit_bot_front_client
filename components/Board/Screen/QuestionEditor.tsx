@@ -1,5 +1,4 @@
 import {
-  KeyboardAvoidingView,
   View,
   Text,
   TouchableOpacity,
@@ -16,16 +15,21 @@ import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState, useEffect } from "react";
 import { useUpdatePost, usePost } from "@/components/hooks/postQuery";
-
-const USER_ID = "6908b0ea11c4a31b7f814a5a"; // 임시 사용자 ID
+import { useTranslation } from "react-i18next";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/components/contexts/AuthContext";
 
 type QuestionEditRouteProp = RouteProp<RootStackParamList, "QuestionEdit">;
 
 export default function QuestionEdit() {
+  const insets = useSafeAreaInsets();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<QuestionEditRouteProp>();
   const postId = route.params?.postId;
+  const { t } = useTranslation();
+  const { user } = useAuth();
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -42,36 +46,37 @@ export default function QuestionEdit() {
 
   const onXPress = () => {
     if (title !== post?.title || content !== post?.content) {
-      Alert.alert(
-        "수정 취소",
-        "수정한 내용이 저장되지 않습니다. 정말 취소하시겠습니까?",
-        [
-          { text: "계속 작성", style: "cancel" },
-          {
-            text: "취소",
-            style: "destructive",
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      Alert.alert(t("postEdit.cancelTitle"), t("postEdit.cancelMessage"), [
+        { text: t("postEdit.continueWriting"), style: "cancel" },
+        {
+          text: t("common.cancel"),
+          style: "destructive",
+          onPress: () => navigation.goBack(),
+        },
+      ]);
     } else {
       navigation.goBack();
     }
   };
 
   const handleSubmit = () => {
+    if (!user) {
+      Alert.alert(t("common.alert"), t("auth.loginRequired"));
+      return;
+    }
+
     if (!title.trim()) {
-      Alert.alert("알림", "제목을 입력해주세요.");
+      Alert.alert(t("common.alert"), t("postEdit.enterTitle"));
       return;
     }
 
     if (!content.trim()) {
-      Alert.alert("알림", "내용을 입력해주세요.");
+      Alert.alert(t("common.alert"), t("postEdit.enterContent"));
       return;
     }
 
     if (title === post?.title && content === post?.content) {
-      Alert.alert("알림", "수정된 내용이 없습니다.");
+      Alert.alert(t("common.alert"), t("postEdit.noChanges"));
       return;
     }
 
@@ -79,26 +84,24 @@ export default function QuestionEdit() {
       {
         postId,
         data: {
-          authorId: USER_ID,
+          authorId: user.id,
           title: title.trim(),
           content: content.trim(),
         },
       },
       {
         onSuccess: () => {
-          Alert.alert("수정 완료", "게시글이 수정되었습니다.", [
+          Alert.alert(t("postEdit.editComplete"), t("postEdit.editSuccess"), [
             {
-              text: "확인",
+              text: t("common.confirm"),
               onPress: () => navigation.goBack(),
             },
           ]);
         },
         onError: (error) => {
           Alert.alert(
-            "오류",
-            error instanceof Error
-              ? error.message
-              : "게시글 수정에 실패했습니다."
+            t("common.error"),
+            error instanceof Error ? error.message : t("postEdit.editFailed")
           );
         },
       }
@@ -109,7 +112,7 @@ export default function QuestionEdit() {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>게시글을 불러오는 중...</Text>
+        <Text style={styles.loadingText}>{t("board.loading")}</Text>
       </View>
     );
   }
@@ -117,12 +120,12 @@ export default function QuestionEdit() {
   if (!post) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <Text style={styles.errorText}>게시글을 찾을 수 없습니다.</Text>
+        <Text style={styles.errorText}>{t("postEdit.notFound")}</Text>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backButtonText}>돌아가기</Text>
+          <Text style={styles.backButtonText}>{t("common.goBack")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -137,16 +140,16 @@ export default function QuestionEdit() {
         <TouchableOpacity onPress={onXPress} disabled={isPending}>
           <AntDesign name="close" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>게시글 수정</Text>
+        <Text style={styles.headerTitle}>{t("postEdit.title")}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.inputSection}>
-          <Text style={styles.label}>제목</Text>
+          <Text style={styles.label}>{t("postEdit.titleLabel")}</Text>
           <TextInput
             style={styles.titleInput}
-            placeholder="제목을 입력해주세요."
+            placeholder={t("postEdit.titlePlaceholder")}
             placeholderTextColor="#999"
             value={title}
             onChangeText={setTitle}
@@ -158,7 +161,7 @@ export default function QuestionEdit() {
         <View style={styles.inputSection}>
           <TextInput
             style={styles.contentInput}
-            placeholder="내용을 입력해주세요."
+            placeholder={t("postEdit.contentPlaceholder")}
             placeholderTextColor="#999"
             multiline
             textAlignVertical="top"
@@ -172,6 +175,7 @@ export default function QuestionEdit() {
       <TouchableOpacity
         style={[
           styles.submitButton,
+          { bottom: 16 + insets.bottom },
           (isPending || !title.trim() || !content.trim()) &&
             styles.submitButtonDisabled,
         ]}
@@ -183,7 +187,7 @@ export default function QuestionEdit() {
         ) : (
           <>
             <AntDesign name="edit" size={20} color="#FFFFFF" />
-            <Text style={styles.submitButtonText}>수정하기</Text>
+            <Text style={styles.submitButtonText}>{t("postEdit.submit")}</Text>
           </>
         )}
       </TouchableOpacity>
@@ -250,7 +254,6 @@ const styles = StyleSheet.create({
     gap: 8,
     position: "absolute",
     right: 16,
-    bottom: 16,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 24,

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   View,
   Text,
@@ -6,14 +6,21 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSchoolAuth } from "@/components/hooks/useSchoolAuth"; // 👈 Hook 가져오기
+import { useSchoolAuth } from "@/components/hooks/useSchoolAuth";
+import { useTranslation } from "react-i18next";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/App";
 
 export default function SchoolAuthScreen() {
-  // 훅에서 로직과 상태를 다 가져옵니다.
+  const { t } = useTranslation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const codeInputRef = useRef<TextInput>(null);
   const {
     studentId,
     setStudentId,
@@ -23,8 +30,28 @@ export default function SchoolAuthScreen() {
     loading,
     handleSend,
     handleVerify,
-    resetForm, // "학번 다시 입력하기"용 함수
+    resetForm,
   } = useSchoolAuth();
+
+  const handleSkip = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "MainTabs" }],
+    });
+  };
+
+  // OTP 박스 렌더링
+  const renderCodeBoxes = () => {
+    const boxes = [];
+    for (let i = 0; i < 6; i++) {
+      boxes.push(
+        <View key={i} style={styles.codeBox}>
+          <Text style={styles.codeText}>{code[i] || ""}</Text>
+        </View>
+      );
+    }
+    return boxes;
+  };
 
   return (
     <KeyboardAvoidingView
@@ -32,20 +59,22 @@ export default function SchoolAuthScreen() {
       style={styles.container}
     >
       <View style={styles.content}>
+        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+          <Ionicons name="close" size={28} color="#8E8E93" />
+        </TouchableOpacity>
+
         <Ionicons
           name="school-outline"
           size={60}
           color="#007AFF"
           style={styles.icon}
         />
-        <Text style={styles.title}>금오공대 학생 인증</Text>
-        <Text style={styles.subtitle}>
-          게시글 작성을 위해{"\n"}학교 웹메일 인증이 필요합니다.
-        </Text>
+        <Text style={styles.title}>{t("schoolAuth.title")}</Text>
+        <Text style={styles.subtitle}>{t("schoolAuth.subtitle")}</Text>
 
         {/* 학번 입력 */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>학번</Text>
+          <Text style={styles.label}>{t("schoolAuth.studentId")}</Text>
           <View style={styles.row}>
             <TextInput
               style={[styles.input, isSent && styles.disabledInput]}
@@ -57,17 +86,29 @@ export default function SchoolAuthScreen() {
           </View>
         </View>
 
-        {/* 인증번호 입력 */}
+        {/* 인증번호 입력 - OTP 스타일 */}
         {isSent && (
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>인증번호</Text>
+            <Text style={styles.label}>{t("schoolAuth.verificationCode")}</Text>
+
+            {/* OTP 박스들 (터치하면 숨겨진 input에 포커스) */}
+            <TouchableOpacity
+              style={styles.codeBoxContainer}
+              onPress={() => codeInputRef.current?.focus()}
+              activeOpacity={0.8}
+            >
+              {renderCodeBoxes()}
+            </TouchableOpacity>
+
+            {/* 숨겨진 실제 입력창 */}
             <TextInput
-              style={styles.input}
-              placeholder="메일로 온 6자리 숫자"
+              ref={codeInputRef}
+              style={styles.hiddenInput}
               value={code}
-              onChangeText={setCode}
-              keyboardType="numeric"
+              onChangeText={(text) => setCode(text.replace(/[^0-9]/g, ""))}
+              keyboardType="number-pad"
               maxLength={6}
+              autoFocus
             />
           </View>
         )}
@@ -83,22 +124,32 @@ export default function SchoolAuthScreen() {
                   style={styles.mainButton}
                   onPress={handleSend}
                 >
-                  <Text style={styles.buttonText}>인증번호 받기</Text>
+                  <Text style={styles.buttonText}>
+                    {t("schoolAuth.getCode")}
+                  </Text>
                 </TouchableOpacity>
               ) : (
                 <>
                   <TouchableOpacity
-                    style={styles.mainButton}
+                    style={[
+                      styles.mainButton,
+                      code.length < 6 && styles.mainButtonDisabled,
+                    ]}
                     onPress={handleVerify}
+                    disabled={code.length < 6}
                   >
-                    <Text style={styles.buttonText}>인증 완료</Text>
+                    <Text style={styles.buttonText}>
+                      {t("schoolAuth.verify")}
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={styles.subButton}
                     onPress={resetForm}
                   >
-                    <Text style={styles.subButtonText}>학번 다시 입력하기</Text>
+                    <Text style={styles.subButtonText}>
+                      {t("schoolAuth.reenter")}
+                    </Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -119,6 +170,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: "center",
+  },
+  skipButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    padding: 8,
+    zIndex: 10,
   },
   icon: {
     alignSelf: "center",
@@ -171,6 +229,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
   },
+
+  // OTP 스타일 인증번호 입력
+  codeBoxContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  codeBox: {
+    flex: 1,
+    height: 56,
+    borderWidth: 2,
+    borderColor: "#E5E5E5",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F9F9F9",
+  },
+  codeText: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#333",
+  },
+  hiddenInput: {
+    position: "absolute",
+    opacity: 0,
+    height: 0,
+    width: 0,
+  },
+
   buttonContainer: {
     marginTop: 10,
     gap: 12,
@@ -181,6 +268,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
+  },
+  mainButtonDisabled: {
+    opacity: 0.5,
   },
   buttonText: {
     fontSize: 16,

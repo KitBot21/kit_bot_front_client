@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTranslation } from "react-i18next";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   fetchGoogleEvents,
   createGoogleEvent,
@@ -27,6 +27,7 @@ import { GoogleCalendarEvent } from "@/components/api/types/APITypes/googleCalen
 export default function CalendarScreen() {
   const { t, i18n } = useTranslation();
 
+  const insets = useSafeAreaInsets();
   // 언어에 따른 달력 로케일 설정
   useEffect(() => {
     if (i18n.language === "ko") {
@@ -309,7 +310,7 @@ export default function CalendarScreen() {
       </View>
 
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: 20 + insets.bottom }]} // 👈 여기만 수정
         onPress={() => {
           const now = new Date();
           setStartTime(now);

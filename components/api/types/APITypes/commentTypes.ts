@@ -2,6 +2,7 @@ export interface CommentCreateRequest {
   postId: string;
   content: string;
   parentId?: string | null;
+  authorId: string | undefined;
 }
 
 // CommentTypes.ts

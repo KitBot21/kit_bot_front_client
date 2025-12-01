@@ -11,7 +11,9 @@
     "failed": "실패했습니다.",
     "alert": "알림",
     "retry": "다시 시도",
-    "success": "성공"
+    "success": "성공",
+    "complete": "완료",
+    "goBack": "돌아가기"
   },
   "header": {
     "menu": "메뉴",
@@ -40,7 +42,12 @@
     "keywordSubscription": "공지 키워드 구독",
     "keywordDesc": "구독한 키워드가 포함된 새 공지가 올라오면 알림을 받을 수 있어요.",
     "myPosts": "내가 쓴 글",
-    "noPosts": "작성한 게시글이 없습니다."
+    "noPosts": "작성한 게시글이 없습니다.",
+    "loginRequired": "로그인이 필요합니다",
+    "loginDesc": "마이페이지를 이용하려면\n로그인해주세요",
+    "googleLogin": "Google로 로그인",
+    "notVerified": "학교 인증 필요",
+    "verified": "금오공대 인증됨"
   },
   "keywords": {
     "SCHOLARSHIP": "장학",
@@ -53,7 +60,9 @@
     "login": "로그인",
     "loginRequired": "로그인이 필요합니다",
     "nicknameSet": "닉네임 설정",
-    "nicknamePlaceholder": "닉네임을 입력하세요"
+    "nicknamePlaceholder": "닉네임을 입력하세요",
+    "loginSubtitle": "게시판을 이용하려면\nGoogle 계정으로 로그인해주세요",
+    "googleLogin": "Google로 로그인"
   },
   "board": {
     "title": "게시판",
@@ -91,5 +100,88 @@
     "enterContent": "내용을 입력해주세요.",
     "eventCreated": "일정이 등록되었습니다.",
     "eventCreateError": "일정 등록 중 오류가 발생했습니다."
+  },
+  "postWrite": {
+    "title": "질문 하기",
+    "titleLabel": "제목",
+    "titlePlaceholder": "제목을 입력해주세요.",
+    "contentPlaceholder": "kit-bot에게 답을 듣지 못했던 질문들을 질문해세요",
+    "enterTitle": "제목을 입력해주세요.",
+    "enterContent": "내용을 입력해주세요.",
+    "submit": "등록하기",
+    "createFailed": "게시글 작성에 실패했습니다."
+  },
+  "post": {
+    "testUser": "테스트 사용자",
+    "deleteTitle": "게시글 삭제",
+    "deleteConfirm": "정말 이 게시글을 삭제하시겠습니까?",
+    "deleteComplete": "삭제 완료",
+    "deleteSuccess": "게시글이 삭제되었습니다.",
+    "deleteFailed": "게시글 삭제에 실패했습니다."
+  },
+  "schoolAuth": {
+    "title": "금오공대 학생 인증",
+    "subtitle": "게시글 작성을 위해\n학교 웹메일 인증이 필요합니다.",
+    "studentId": "학번",
+    "verificationCode": "인증번호",
+    "codePlaceholder": "메일로 온 6자리 숫자",
+    "getCode": "인증번호 받기",
+    "verify": "인증 완료",
+    "reenter": "학번 다시 입력하기"
+  },
+  "setUsername": {
+    "title": "닉네임을 설정해주세요",
+    "subtitle": "게시판에서 사용할 닉네임을 입력해주세요",
+    "placeholder": "닉네임 (2-10자)",
+    "helperText": "한글, 영문, 숫자, 밑줄 사용 가능",
+    "lengthError": "닉네임은 2자 이상 10자 이하여야 합니다.",
+    "formatError": "닉네임은 한글, 영문, 숫자, 밑줄만 사용할 수 있습니다.",
+    "duplicateError": "이미 사용 중인 닉네임입니다.",
+    "success": "닉네임이 설정되었습니다!",
+    "failed": "닉네임 설정에 실패했습니다."
+  },
+  "postEdit": {
+    "title": "게시글 수정",
+    "titleLabel": "제목",
+    "titlePlaceholder": "제목을 입력해주세요.",
+    "contentPlaceholder": "내용을 입력해주세요.",
+    "submit": "수정하기",
+    "cancelTitle": "수정 취소",
+    "cancelMessage": "수정한 내용이 저장되지 않습니다. 정말 취소하시겠습니까?",
+    "continueWriting": "계속 작성",
+    "enterTitle": "제목을 입력해주세요.",
+    "enterContent": "내용을 입력해주세요.",
+    "noChanges": "수정된 내용이 없습니다.",
+    "editComplete": "수정 완료",
+    "editSuccess": "게시글이 수정되었습니다.",
+    "editFailed": "게시글 수정에 실패했습니다.",
+    "notFound": "게시글을 찾을 수 없습니다."
+  },
+  "comment": {
+    "reply": "답글 달기",
+    "hideReplies": "답글 숨기기",
+    "showReplies": "답글 {{count}}개 보기",
+    "deleteComment": "댓글 삭제",
+    "deleteConfirm": "정말 이 댓글을 삭제하시겠습니까?",
+    "deleteComplete": "삭제 완료",
+    "deleteSuccess": "댓글이 삭제되었습니다.",
+    "deleteFailed": "댓글 삭제에 실패했습니다.",
+    "deleteReply": "대댓글 삭제",
+    "deleteReplyConfirm": "정말 이 대댓글을 삭제하시겠습니까?",
+    "deleteReplySuccess": "대댓글이 삭제되었습니다.",
+    "deleteReplyFailed": "대댓글 삭제에 실패했습니다.",
+    "selectReportReason": "신고 사유 선택",
+    "reportReasons": {
+      "spam": "스팸/도배",
+      "abuse": "욕설/비방",
+      "inappropriate": "음란성",
+      "other": "기타"
+    },
+    "reportConfirmTitle": "정말 신고하시겠습니까?",
+    "reportConfirmDescription": "신고 후에는 취소할 수 없으며,\n허위 신고 시 제재를 받을 수 있습니다.",
+    "report": "신고",
+    "reporting": "신고 중...",
+    "reportComplete": "신고 완료",
+    "reportSuccess": "신고가 완료되었습니다."
   }
 }

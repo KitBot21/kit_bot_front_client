@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Modal,
   TouchableWithoutFeedback,
-  SafeAreaView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -15,14 +14,19 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useUnreadNotificationCount } from "../hooks/useNotification";
 import { useTranslation } from "react-i18next";
 import { setStoredLanguage } from "../i18n";
+import {
+  useSafeAreaInsets,
+  initialWindowMetrics,
+} from "react-native-safe-area-context";
 
 export default function CommonHeader() {
+  const insets = initialWindowMetrics?.insets ?? { top: 0, bottom: 0 };
+  console.log(initialWindowMetrics);
+  console.log(insets);
+
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { t, i18n } = useTranslation();
-
-  console.log("현재 언어:", i18n.language);
-  console.log("번역 테스트:", t("header.mypage"));
 
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
@@ -60,7 +64,6 @@ export default function CommonHeader() {
           <Ionicons name="calendar" size={20} color="#333" />
         </TouchableOpacity>
 
-        {/* 언어 선택 버튼 */}
         <TouchableOpacity
           style={styles.iconButton}
           onPress={() => setLanguageModalVisible(true)}
@@ -68,7 +71,6 @@ export default function CommonHeader() {
           <Ionicons name="language" size={20} color="#333" />
         </TouchableOpacity>
 
-        {/* 알림 버튼 */}
         <TouchableOpacity style={styles.iconButton} onPress={goToNotifications}>
           <Ionicons name="notifications-outline" size={20} color="#333" />
           {!!unreadCount && unreadCount > 0 && (
@@ -94,6 +96,7 @@ export default function CommonHeader() {
         transparent={true}
         visible={isLanguageModalVisible}
         onRequestClose={() => setLanguageModalVisible(false)}
+        statusBarTranslucent={true}
       >
         <TouchableWithoutFeedback
           onPress={() => setLanguageModalVisible(false)}
@@ -156,44 +159,45 @@ export default function CommonHeader() {
         transparent={true}
         visible={isMenuVisible}
         onRequestClose={() => setMenuVisible(false)}
+        statusBarTranslucent={true}
       >
         <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
           <View style={styles.menuModalOverlay}>
             <TouchableWithoutFeedback>
-              <View style={styles.menuContainer}>
-                <SafeAreaView>
-                  <View style={styles.menuHeader}>
-                    <Text style={styles.menuTitle}>{t("header.menu")}</Text>
-                    <TouchableOpacity onPress={() => setMenuVisible(false)}>
-                      <Ionicons name="close" size={28} color="#333" />
-                    </TouchableOpacity>
-                  </View>
+              <View
+                style={[
+                  styles.menuContainer,
+                  {
+                    paddingTop: insets.top + 20,
+                    paddingBottom: insets.bottom + 20,
+                  },
+                ]}
+              >
+                <View style={styles.menuHeader}>
+                  <Text style={styles.menuTitle}>{t("header.menu")}</Text>
+                  <TouchableOpacity onPress={() => setMenuVisible(false)}>
+                    <Ionicons name="close" size={28} color="#333" />
+                  </TouchableOpacity>
+                </View>
 
-                  <View style={styles.menuItems}>
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={goToMyPage}
-                    >
-                      <Ionicons
-                        name="person-circle-outline"
-                        size={24}
-                        color="#333"
-                      />
-                      <Text style={styles.menuText}>{t("header.mypage")}</Text>
-                    </TouchableOpacity>
+                <View style={styles.menuItems}>
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={goToMyPage}
+                  >
+                    <Ionicons
+                      name="person-circle-outline"
+                      size={24}
+                      color="#333"
+                    />
+                    <Text style={styles.menuText}>{t("header.mypage")}</Text>
+                  </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.menuItem}>
-                      <Ionicons
-                        name="settings-outline"
-                        size={24}
-                        color="#333"
-                      />
-                      <Text style={styles.menuText}>
-                        {t("header.settings")}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </SafeAreaView>
+                  <TouchableOpacity style={styles.menuItem}>
+                    <Ionicons name="settings-outline" size={24} color="#333" />
+                    <Text style={styles.menuText}>{t("header.settings")}</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -222,14 +226,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  // 메뉴 모달 오버레이 (오른쪽 정렬)
   menuModalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     flexDirection: "row",
     justifyContent: "flex-end",
   },
-  // 언어 모달 오버레이 (중앙 정렬)
   languageModalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -239,8 +241,8 @@ const styles = StyleSheet.create({
   menuContainer: {
     width: "70%",
     backgroundColor: "#FFFFFF",
-    height: "100%",
-    padding: 20,
+    height: "100%", // 👈 flex: 1 대신
+    paddingHorizontal: 20,
     shadowColor: "#000",
     shadowOffset: {
       width: -2,
@@ -255,7 +257,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 30,
-    paddingTop: 10,
   },
   menuTitle: {
     fontSize: 20,
@@ -295,7 +296,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "bold",
   },
-  // 언어 모달 스타일
   languageModal: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,

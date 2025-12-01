@@ -1,5 +1,4 @@
-// CommentInput.tsx
-import { useState, forwardRef } from "react";
+import { useState, forwardRef, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -7,8 +6,10 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Text,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface CommentInputProps {
   onSubmit: (text: string) => void;
@@ -32,6 +33,22 @@ const CommentInput = forwardRef<TextInput, CommentInputProps>(
     ref
   ) => {
     const [text, setText] = useState("");
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+    const insets = useSafeAreaInsets();
+
+    useEffect(() => {
+      const showSub = Keyboard.addListener("keyboardDidShow", () => {
+        setKeyboardVisible(true);
+      });
+      const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+        setKeyboardVisible(false);
+      });
+
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
+    }, []);
 
     const handleSubmit = () => {
       if (text.trim() && !isSubmitting) {
@@ -51,7 +68,14 @@ const CommentInput = forwardRef<TextInput, CommentInputProps>(
           </View>
         )}
 
-        <View style={styles.inputRow}>
+        <View
+          style={[
+            styles.inputRow,
+            {
+              paddingBottom: keyboardVisible ? 12 : Math.max(insets.bottom, 12),
+            },
+          ]}
+        >
           <TextInput
             ref={ref}
             style={styles.input}
@@ -108,7 +132,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingTop: 12,
     gap: 12,
   },
   input: {

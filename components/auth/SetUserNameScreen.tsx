@@ -1,4 +1,3 @@
-// components/Auth/SetUsernameScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -8,10 +7,16 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/App";
 import { useAuth } from "../contexts/AuthContext";
+import { useTranslation } from "react-i18next";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.0.10:8080";
 
 export default function SetUsernameScreen() {
@@ -19,19 +24,20 @@ export default function SetUsernameScreen() {
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const { accessToken, updateUser, user } = useAuth();
-  const navigation = useNavigation();
+  const { accessToken, updateUser } = useAuth();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useTranslation();
 
-  // 닉네임 유효성 검사
   const validateUsername = (value: string): boolean => {
     if (value.length < 2 || value.length > 10) {
-      setError("닉네임은 2자 이상 10자 이하여야 합니다.");
+      setError(t("setUsername.lengthError"));
       return false;
     }
 
     const regex = /^[가-힣a-zA-Z0-9_]+$/;
     if (!regex.test(value)) {
-      setError("닉네임은 한글, 영문, 숫자, 밑줄만 사용할 수 있습니다.");
+      setError(t("setUsername.formatError"));
       return false;
     }
 
@@ -39,7 +45,6 @@ export default function SetUsernameScreen() {
     return true;
   };
 
-  // 닉네임 중복 체크
   const checkUsername = async (value: string) => {
     if (!validateUsername(value)) return;
 
@@ -53,7 +58,7 @@ export default function SetUsernameScreen() {
       const data = await res.json();
 
       if (!data.available) {
-        setError("이미 사용 중인 닉네임입니다.");
+        setError(t("setUsername.duplicateError"));
       }
     } catch (error) {
       console.error("중복 체크 실패:", error);
@@ -62,7 +67,6 @@ export default function SetUsernameScreen() {
     }
   };
 
-  // 닉네임 설정
   const handleSubmit = async () => {
     if (!validateUsername(username)) return;
     if (error) return;
@@ -81,35 +85,50 @@ export default function SetUsernameScreen() {
       const data = await res.json();
 
       if (data.success) {
-        // 사용자 정보 업데이트
         await updateUser(data.user);
-        Alert.alert("완료", "닉네임이 설정되었습니다!", [
-          { text: "확인", onPress: () => navigation.goBack() },
+        Alert.alert(t("common.complete"), t("setUsername.success"), [
+          {
+            text: t("common.confirm"),
+            onPress: () => {
+              if (data.user.role === "guest") {
+                navigation.reset({
+                  index: 1,
+                  routes: [{ name: "MainTabs" }, { name: "SchoolAuth" }],
+                });
+              } else {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "MainTabs" }],
+                });
+              }
+            },
+          },
         ]);
       } else {
         setError(data.message);
       }
     } catch (error) {
       console.error("닉네임 설정 실패:", error);
-      Alert.alert("오류", "닉네임 설정에 실패했습니다.");
+      Alert.alert(t("common.error"), t("setUsername.failed"));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
       <View style={styles.content}>
         <Ionicons name="person-circle-outline" size={80} color="#007AFF" />
-        <Text style={styles.title}>닉네임을 설정해주세요</Text>
-        <Text style={styles.subtitle}>
-          게시판에서 사용할 닉네임을 입력해주세요
-        </Text>
+        <Text style={styles.title}>{t("setUsername.title")}</Text>
+        <Text style={styles.subtitle}>{t("setUsername.subtitle")}</Text>
 
         <View style={styles.inputWrapper}>
           <TextInput
             style={[styles.input, error && styles.inputError]}
-            placeholder="닉네임 (2-10자)"
+            placeholder={t("setUsername.placeholder")}
             value={username}
             onChangeText={(value) => {
               setUsername(value);
@@ -139,9 +158,7 @@ export default function SetUsernameScreen() {
         {error ? (
           <Text style={styles.errorText}>{error}</Text>
         ) : (
-          <Text style={styles.helperText}>
-            한글, 영문, 숫자, 밑줄 사용 가능
-          </Text>
+          <Text style={styles.helperText}>{t("setUsername.helperText")}</Text>
         )}
 
         <TouchableOpacity
@@ -155,11 +172,11 @@ export default function SetUsernameScreen() {
           {submitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitButtonText}>완료</Text>
+            <Text style={styles.submitButtonText}>{t("common.complete")}</Text>
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -167,10 +184,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
-    justifyContent: "center",
   },
   content: {
+    flex: 1,
     padding: 32,
+    justifyContent: "center",
     alignItems: "center",
   },
   title: {

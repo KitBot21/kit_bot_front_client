@@ -18,12 +18,10 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/App";
-
+import { useAuth } from "@/components/contexts/AuthContext";
 interface PostContentProps {
   post: Post;
 }
-
-const USER_ID = "6908b0ea11c4a31b7f814a5a"; // 임시 사용자 ID
 
 export default function PostContent({ post }: PostContentProps) {
   const navigation =
@@ -32,6 +30,8 @@ export default function PostContent({ post }: PostContentProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [selectedReason, setSelectedReason] = useState("");
+  const { user } = useAuth();
+  const displayName = user?.username ?? "익명";
 
   const toggleRecommendMutation = useToggleRecommendPost();
   const reportMutation = useReportPost();
@@ -137,7 +137,7 @@ export default function PostContent({ post }: PostContentProps) {
     ]);
   };
 
-  const isMyPost = post.authorId === USER_ID;
+  const isMyPost = user && post.authorId === user.id; // 👈 수정
 
   return (
     <>
@@ -148,9 +148,7 @@ export default function PostContent({ post }: PostContentProps) {
               <Ionicons name="person" size={20} color="#fff" />
             </View>
             <View>
-              <Text style={styles.authorName}>
-                {getAuthorName(post.authorId)}
-              </Text>
+              <Text style={styles.authorName}>{displayName}</Text>
               <Text style={styles.postTime}>{formatDate(post.createdAt)}</Text>
             </View>
           </View>

@@ -29,7 +29,7 @@ export interface PostsParams {
 }
 
 export interface PostCreateRequest {
-  authorId: string;
+  authorId?: string;
   title: string;
   content: string;
 }

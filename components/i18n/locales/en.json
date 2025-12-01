@@ -11,7 +11,9 @@
     "alert": "Alert",
     "retry": "Retry",
     "success": "Success",
-    "error": "Error"
+    "error": "Error",
+    "complete": "Done",
+    "goBack": "Go Back"
   },
   "header": {
     "menu": "Menu",
@@ -40,7 +42,12 @@
     "keywordDesc": "Get notified when new announcements contain your subscribed keywords.",
     "myPosts": "My Posts",
     "noPosts": "No posts yet.",
-    "nicknameChanged": "Nickname has been changed."
+    "nicknameChanged": "Nickname has been changed.",
+    "loginRequired": "Login Required",
+    "loginDesc": "Please login to\naccess My Page",
+    "googleLogin": "Login with Google",
+    "notVerified": "Verification needed",
+    "verified": "Kumoh verified"
   },
   "keywords": {
     "SCHOLARSHIP": "Scholarship",
@@ -51,7 +58,9 @@
   },
   "auth": {
     "login": "Login",
-    "loginRequired": "Login required",
+    "loginRequired": "Login Required",
+    "loginSubtitle": "Please sign in with your\nGoogle account to use the board",
+    "googleLogin": "Sign in with Google",
     "nicknameSet": "Set Nickname",
     "nicknamePlaceholder": "Enter nickname"
   },
@@ -91,5 +100,88 @@
     "enterContent": "Please enter content.",
     "eventCreated": "Event has been created.",
     "eventCreateError": "Failed to create event."
+  },
+  "postWrite": {
+    "title": "Ask a Question",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Enter title",
+    "contentPlaceholder": "Ask questions that KIT-Bot couldn't answer",
+    "enterTitle": "Please enter a title.",
+    "enterContent": "Please enter content.",
+    "submit": "Submit",
+    "createFailed": "Failed to create post."
+  },
+  "post": {
+    "testUser": "Test User",
+    "deleteTitle": "Delete Post",
+    "deleteConfirm": "Are you sure you want to delete this post?",
+    "deleteComplete": "Deleted",
+    "deleteSuccess": "Post has been deleted.",
+    "deleteFailed": "Failed to delete post."
+  },
+  "schoolAuth": {
+    "title": "Kumoh Student Verification",
+    "subtitle": "Email verification is required\nto write posts.",
+    "studentId": "Student ID",
+    "verificationCode": "Verification Code",
+    "codePlaceholder": "6-digit code from email",
+    "getCode": "Get Code",
+    "verify": "Verify",
+    "reenter": "Re-enter Student ID"
+  },
+  "setUsername": {
+    "title": "Set Your Nickname",
+    "subtitle": "Enter a nickname to use on the board",
+    "placeholder": "Nickname (2-10 characters)",
+    "helperText": "Korean, English, numbers, underscore allowed",
+    "lengthError": "Nickname must be 2-10 characters.",
+    "formatError": "Only Korean, English, numbers, and underscore allowed.",
+    "duplicateError": "This nickname is already taken.",
+    "success": "Nickname has been set!",
+    "failed": "Failed to set nickname."
+  },
+  "postEdit": {
+    "title": "Edit Post",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Enter title",
+    "contentPlaceholder": "Enter content",
+    "submit": "Update",
+    "cancelTitle": "Cancel Edit",
+    "cancelMessage": "Your changes will not be saved. Are you sure?",
+    "continueWriting": "Continue",
+    "enterTitle": "Please enter a title.",
+    "enterContent": "Please enter content.",
+    "noChanges": "No changes made.",
+    "editComplete": "Edit Complete",
+    "editSuccess": "Post has been updated.",
+    "editFailed": "Failed to update post.",
+    "notFound": "Post not found."
+  },
+  "comment": {
+    "reply": "Reply",
+    "hideReplies": "Hide replies",
+    "showReplies": "View {{count}} replies",
+    "deleteComment": "Delete Comment",
+    "deleteConfirm": "Are you sure you want to delete this comment?",
+    "deleteComplete": "Deleted",
+    "deleteSuccess": "Comment has been deleted.",
+    "deleteFailed": "Failed to delete comment.",
+    "deleteReply": "Delete Reply",
+    "deleteReplyConfirm": "Are you sure you want to delete this reply?",
+    "deleteReplySuccess": "Reply has been deleted.",
+    "deleteReplyFailed": "Failed to delete reply.",
+    "selectReportReason": "Select Report Reason",
+    "reportReasons": {
+      "spam": "Spam",
+      "abuse": "Abusive Language",
+      "inappropriate": "Inappropriate Content",
+      "other": "Other"
+    },
+    "reportConfirmTitle": "Report this comment?",
+    "reportConfirmDescription": "Reports cannot be undone.\nFalse reports may result in penalties.",
+    "report": "Report",
+    "reporting": "Reporting...",
+    "reportComplete": "Report Submitted",
+    "reportSuccess": "Your report has been submitted."
   }
 }

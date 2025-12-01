@@ -14,14 +14,17 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/App";
 import { useState } from "react";
 import { useDeletePost } from "@/components/hooks/postQuery";
-
-const USER_ID = "6908b0ea11c4a31b7f814a5a";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "@/components/contexts/AuthContext";
 
 export default function RenderPost({ item }: { item: Post }) {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useTranslation();
   const [showMenuModal, setShowMenuModal] = useState(false);
   const deletePostMutation = useDeletePost();
+  const { user } = useAuth();
+  const displayName = user?.username ?? "익명";
 
   const handlePress = () => {
     navigation.navigate("PostDetail", { postId: item.id });
@@ -47,20 +50,20 @@ export default function RenderPost({ item }: { item: Post }) {
 
   const handleDelete = () => {
     setShowMenuModal(false);
-    Alert.alert("게시글 삭제", "정말 이 게시글을 삭제하시겠습니까?", [
-      { text: "취소", style: "cancel" },
+    Alert.alert(t("post.deleteTitle"), t("post.deleteConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "삭제",
+        text: t("common.delete"),
         style: "destructive",
         onPress: () => {
           deletePostMutation.mutate(item.id, {
             onSuccess: () => {
-              Alert.alert("삭제 완료", "게시글이 삭제되었습니다.");
+              Alert.alert(t("post.deleteComplete"), t("post.deleteSuccess"));
             },
             onError: (error: Error) => {
               Alert.alert(
-                "오류",
-                error.message || "게시글 삭제에 실패했습니다."
+                t("common.error"),
+                error.message || t("post.deleteFailed")
               );
             },
           });
@@ -69,7 +72,7 @@ export default function RenderPost({ item }: { item: Post }) {
     ]);
   };
 
-  const isMyPost = item.authorId === USER_ID;
+  const isMyPost = user && item.authorId === user.id; // 👈 수정
 
   return (
     <>
@@ -86,7 +89,7 @@ export default function RenderPost({ item }: { item: Post }) {
 
         <View style={styles.postFooter}>
           <View style={styles.leftInfo}>
-            <Text style={styles.postAuthor}>테스트 사용자</Text>
+            <Text style={styles.postAuthor}>{displayName}</Text>
             <Text style={styles.postTime}>{formatDate(item.createdAt)}</Text>
           </View>
 
@@ -114,7 +117,7 @@ export default function RenderPost({ item }: { item: Post }) {
                   onPress={handleEdit}
                 >
                   <Ionicons name="create-outline" size={20} color="#333" />
-                  <Text style={styles.menuOptionText}>수정</Text>
+                  <Text style={styles.menuOptionText}>{t("common.edit")}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -122,14 +125,18 @@ export default function RenderPost({ item }: { item: Post }) {
                   onPress={handleDelete}
                 >
                   <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                  <Text style={styles.deleteOptionText}>삭제</Text>
+                  <Text style={styles.deleteOptionText}>
+                    {t("common.delete")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.cancelMenuButton}
                   onPress={() => setShowMenuModal(false)}
                 >
-                  <Text style={styles.cancelMenuText}>취소</Text>
+                  <Text style={styles.cancelMenuText}>
+                    {t("common.cancel")}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>

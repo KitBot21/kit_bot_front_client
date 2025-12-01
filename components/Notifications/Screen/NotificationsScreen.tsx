@@ -14,6 +14,9 @@ import {
   useMyNotifications,
   useMarkNotificationAsRead,
 } from "@/components/hooks/useNotification";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 const KEYWORD_ICONS: Record<string, string> = {
   SCHOLARSHIP: "school-outline",
   COURSE: "book-outline",
@@ -22,18 +25,11 @@ const KEYWORD_ICONS: Record<string, string> = {
   EMPLOYMENT: "briefcase-outline",
 };
 
-const KEYWORD_LABELS: Record<string, string> = {
-  SCHOLARSHIP: "장학",
-  COURSE: "학사/수강",
-  DORM: "생활관",
-  EVENT: "행사/특강",
-  EMPLOYMENT: "취업/인턴",
-};
-
 export default function NotificationsScreen() {
   const { data: notifications, isLoading, refetch } = useMyNotifications();
   const { mutate: markAsRead } = useMarkNotificationAsRead();
-  console.log("NotificationsScreen 렌더링");
+  const { t, i18n } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const handleNotificationPress = (item: NotificationItem) => {
     if (!item.read) {
@@ -56,12 +52,19 @@ export default function NotificationsScreen() {
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (minutes < 1) return "방금 전";
-    if (minutes < 60) return `${minutes}분 전`;
-    if (hours < 24) return `${hours}시간 전`;
-    if (days < 7) return `${days}일 전`;
+    if (i18n.language === "ko") {
+      if (minutes < 1) return "방금 전";
+      if (minutes < 60) return `${minutes}분 전`;
+      if (hours < 24) return `${hours}시간 전`;
+      if (days < 7) return `${days}일 전`;
+    } else {
+      if (minutes < 1) return "Just now";
+      if (minutes < 60) return `${minutes}m ago`;
+      if (hours < 24) return `${hours}h ago`;
+      if (days < 7) return `${days}d ago`;
+    }
 
-    return date.toLocaleDateString("ko-KR", {
+    return date.toLocaleDateString(i18n.language === "ko" ? "ko-KR" : "en-US", {
       month: "short",
       day: "numeric",
     });
@@ -69,7 +72,7 @@ export default function NotificationsScreen() {
 
   const renderNotificationItem = ({ item }: { item: NotificationItem }) => {
     const iconName = KEYWORD_ICONS[item.keyword] || "notifications-outline";
-    const keywordLabel = KEYWORD_LABELS[item.keyword] || item.keyword;
+    const keywordLabel = t(`keywords.${item.keyword}`);
 
     return (
       <TouchableOpacity
@@ -103,7 +106,7 @@ export default function NotificationsScreen() {
           <View style={styles.linkRow}>
             <Ionicons name="link-outline" size={14} color="#8E8E93" />
             <Text style={styles.linkText} numberOfLines={1}>
-              공지사항 바로가기
+              {t("notifications.goToNotice")}
             </Text>
           </View>
         </View>
@@ -125,14 +128,17 @@ export default function NotificationsScreen() {
     <View style={styles.container}>
       <View style={styles.titleContainer}>
         <Ionicons name="notifications" size={24} color="#007AFF" />
-        <Text style={styles.screenTitle}>알림</Text>
+        <Text style={styles.screenTitle}>{t("notifications.title")}</Text>
       </View>
 
       <FlatList
         data={notifications}
         renderItem={renderNotificationItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[
+          styles.listContainer,
+          { paddingBottom: insets.bottom + 8 },
+        ]}
         refreshing={false}
         onRefresh={refetch}
         ListEmptyComponent={
@@ -142,10 +148,8 @@ export default function NotificationsScreen() {
               size={64}
               color="#E0E0E0"
             />
-            <Text style={styles.emptyTitle}>알림이 없습니다</Text>
-            <Text style={styles.emptyDesc}>
-              키워드를 구독하면 새 공지가 올라올 때{"\n"}알림을 받을 수 있어요
-            </Text>
+            <Text style={styles.emptyTitle}>{t("notifications.empty")}</Text>
+            <Text style={styles.emptyDesc}>{t("notifications.emptyDesc")}</Text>
           </View>
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
