@@ -18,17 +18,31 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/App";
+import { useAuth } from "@/components/contexts/AuthContext";
 import {
   fetchGoogleEvents,
   createGoogleEvent,
+  updateGoogleEvent,
+  deleteGoogleEvent,
 } from "@/components/api/services/chatApi";
 import { GoogleCalendarEvent } from "@/components/api/types/APITypes/googleCalendarTypes";
 
 export default function CalendarScreen() {
   const { t, i18n } = useTranslation();
-
   const insets = useSafeAreaInsets();
-  // 언어에 따른 달력 로케일 설정
+  const [calendarKey, setCalendarKey] = useState(0);
+
+  const route = useRoute<RouteProp<RootStackParamList, "Calendar">>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user, isLoading: isAuthLoading } = useAuth();
+
+  const { eventText, scheduleTitle, startDate, endDate } = route.params ?? {};
+
+  // 기존 useEffect 수정
   useEffect(() => {
     if (i18n.language === "ko") {
       LocaleConfig.locales["kr"] = {
@@ -117,10 +131,28 @@ export default function CalendarScreen() {
       };
       LocaleConfig.defaultLocale = "en";
     }
+
+    setCalendarKey((prev) => prev + 1);
   }, [i18n.language]);
+
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      Alert.alert(t("auth.loginRequired"), t("calendar.loginRequired"), [
+        {
+          text: t("common.cancel"),
+          style: "cancel",
+          onPress: () => navigation.goBack(),
+        },
+        { text: t("auth.login"), onPress: () => navigation.replace("Login") },
+      ]);
+    }
+  }, [user, isAuthLoading]);
 
   const [googleToken, setGoogleToken] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [currentMonth, setCurrentMonth] = useState(
     new Date().toISOString().split("T")[0]
   );
   const [eventsMap, setEventsMap] = useState<
@@ -130,12 +162,16 @@ export default function CalendarScreen() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState("");
-
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [enableNotification, setEnableNotification] = useState(false);
+
+  const [editingEvent, setEditingEvent] = useState<GoogleCalendarEvent | null>(
+    null
+  );
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     const getToken = async () => {
@@ -151,6 +187,73 @@ export default function CalendarScreen() {
     }
   }, [googleToken]);
 
+  useEffect(() => {
+    if (!scheduleTitle && !eventText) return;
+
+    console.log(" 캘린더 파라미터 수신:");
+    console.log("  - scheduleTitle:", scheduleTitle);
+    console.log("  - startDate:", startDate);
+    console.log("  - endDate:", endDate);
+    console.log("  - eventText:", eventText);
+
+    const isValidDate = (str?: string) => {
+      return str && /^\d{4}-\d{2}-\d{2}/.test(str);
+    };
+
+    if (scheduleTitle && typeof scheduleTitle === "string") {
+      setNewTitle(scheduleTitle);
+    } else if (eventText) {
+      setNewTitle(extractTitleFromText(eventText));
+    }
+
+    if (isValidDate(startDate)) {
+      const dateOnly = startDate!.split("T")[0];
+      setSelectedDate(dateOnly);
+      setCurrentMonth(dateOnly);
+
+      const startDateTime = new Date(`${dateOnly}T09:00:00`);
+      if (!isNaN(startDateTime.getTime())) {
+        setStartTime(startDateTime);
+      } else {
+        setStartTime(new Date());
+      }
+    } else {
+      setSelectedDate(new Date().toISOString().split("T")[0]);
+      setStartTime(new Date());
+    }
+
+    if (isValidDate(endDate)) {
+      const endDateTime = new Date(`${endDate!.split("T")[0]}T10:00:00`);
+      if (!isNaN(endDateTime.getTime())) {
+        setEndTime(endDateTime);
+      } else {
+        const oneHourLater = new Date();
+        oneHourLater.setHours(oneHourLater.getHours() + 1);
+        setEndTime(oneHourLater);
+      }
+    } else {
+      const oneHourLater = new Date();
+      oneHourLater.setHours(oneHourLater.getHours() + 1);
+      setEndTime(oneHourLater);
+    }
+
+    setIsEditMode(false);
+    setEditingEvent(null);
+    setModalVisible(true);
+  }, [scheduleTitle, startDate, endDate, eventText]);
+
+  const extractTitleFromText = (text: string): string => {
+    const firstLine = text.split("\n")[0];
+    let cleaned = firstLine
+      .replace(/[#*\-]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (cleaned.length > 100) {
+      cleaned = cleaned.substring(0, 100) + "...";
+    }
+    return cleaned || "새 일정";
+  };
+
   const loadCalendarData = async () => {
     if (!googleToken) return;
     setLoading(true);
@@ -159,7 +262,7 @@ export default function CalendarScreen() {
       const events = await fetchGoogleEvents(
         googleToken,
         `${currentYear}-01-01T00:00:00Z`,
-        `${currentYear}-12-31T23:59:59Z`
+        `${currentYear + 1}-12-31T23:59:59Z`
       );
 
       const newMap: Record<string, GoogleCalendarEvent[]> = {};
@@ -194,7 +297,7 @@ export default function CalendarScreen() {
     if (selectedDate) setEndTime(selectedDate);
   };
 
-  const handleAddEvent = async () => {
+  const handleSaveEvent = async () => {
     if (!newTitle.trim()) {
       Alert.alert(t("common.alert"), t("calendar.enterContent"));
       return;
@@ -207,20 +310,23 @@ export default function CalendarScreen() {
     try {
       setLoading(true);
 
-      await createGoogleEvent(googleToken, {
+      const eventData = {
         title: newTitle,
         date: selectedDate,
         startTime: formatTimeForApi(startTime),
         endTime: formatTimeForApi(endTime),
         reminders: enableNotification ? [10] : [],
-      });
+      };
 
-      Alert.alert(t("common.success"), t("calendar.eventCreated"));
+      if (isEditMode && editingEvent) {
+        await updateGoogleEvent(googleToken, editingEvent.id, eventData);
+        Alert.alert(t("common.success"), t("calendar.eventUpdated"));
+      } else {
+        await createGoogleEvent(googleToken, eventData);
+        Alert.alert(t("common.success"), t("calendar.eventCreated"));
+      }
 
-      setNewTitle("");
-      setEnableNotification(false);
-      setModalVisible(false);
-
+      resetModal();
       await loadCalendarData();
     } catch (error) {
       console.error(error);
@@ -228,6 +334,77 @@ export default function CalendarScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteEvent = (event: GoogleCalendarEvent) => {
+    Alert.alert(t("calendar.deleteEvent"), t("calendar.deleteConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.delete"),
+        style: "destructive",
+        onPress: async () => {
+          if (!googleToken) return;
+          try {
+            setLoading(true);
+            await deleteGoogleEvent(googleToken, event.id);
+            Alert.alert(t("common.success"), t("calendar.eventDeleted"));
+            await loadCalendarData();
+          } catch (error) {
+            console.error(error);
+            Alert.alert(t("common.failed"), t("calendar.eventDeleteError"));
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEventPress = (event: GoogleCalendarEvent) => {
+    setEditingEvent(event);
+    setIsEditMode(true);
+    setNewTitle(event.summary || "");
+
+    if (event.start.dateTime) {
+      setStartTime(new Date(event.start.dateTime));
+    } else {
+      setStartTime(new Date());
+    }
+
+    if (event.end.dateTime) {
+      setEndTime(new Date(event.end.dateTime));
+    } else {
+      const oneHourLater = new Date();
+      oneHourLater.setHours(oneHourLater.getHours() + 1);
+      setEndTime(oneHourLater);
+    }
+
+    const hasReminder =
+      event.reminders?.useDefault ||
+      (event.reminders?.overrides && event.reminders.overrides.length > 0);
+    setEnableNotification(!!hasReminder);
+
+    setModalVisible(true);
+  };
+
+  const resetModal = () => {
+    setNewTitle("");
+    setEnableNotification(false);
+    setIsEditMode(false);
+    setEditingEvent(null);
+    setModalVisible(false);
+  };
+
+  const handleAddNew = () => {
+    const now = new Date();
+    setStartTime(now);
+    const oneHourLater = new Date(now);
+    oneHourLater.setHours(now.getHours() + 1);
+    setEndTime(oneHourLater);
+    setNewTitle("");
+    setIsEditMode(false);
+    setEditingEvent(null);
+    setModalVisible(true);
   };
 
   const markedDates = useMemo(() => {
@@ -250,17 +427,23 @@ export default function CalendarScreen() {
     if (!isoString) return t("calendar.allDay");
     return new Date(isoString).toLocaleTimeString(
       i18n.language === "ko" ? "ko-KR" : "en-US",
-      {
-        hour: "2-digit",
-        minute: "2-digit",
-      }
+      { hour: "2-digit", minute: "2-digit" }
     );
   };
+
+  if (isAuthLoading || !user) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Calendar
-        key={i18n.language}
+        key={calendarKey}
+        current={currentMonth}
         style={styles.calendar}
         theme={{
           todayTextColor: "#007AFF",
@@ -271,6 +454,7 @@ export default function CalendarScreen() {
         monthFormat={i18n.language === "ko" ? "yyyy년 MM월" : "MMMM yyyy"}
         markedDates={markedDates}
         onDayPress={(day) => setSelectedDate(day.dateString)}
+        onMonthChange={(month) => setCurrentMonth(month.dateString)}
       />
 
       <View style={styles.listContainer}>
@@ -295,7 +479,11 @@ export default function CalendarScreen() {
               </View>
             }
             renderItem={({ item }) => (
-              <View style={styles.eventCard}>
+              <TouchableOpacity
+                style={styles.eventCard}
+                onPress={() => handleEventPress(item)}
+                onLongPress={() => handleDeleteEvent(item)}
+              >
                 <Text style={styles.timeText}>
                   {formatDisplayTime(item.start.dateTime)}
                 </Text>
@@ -303,22 +491,16 @@ export default function CalendarScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.eventTitle}>{item.summary}</Text>
                 </View>
-              </View>
+                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+              </TouchableOpacity>
             )}
           />
         )}
       </View>
 
       <TouchableOpacity
-        style={[styles.fab, { bottom: 20 + insets.bottom }]} // 👈 여기만 수정
-        onPress={() => {
-          const now = new Date();
-          setStartTime(now);
-          const oneHourLater = new Date(now);
-          oneHourLater.setHours(now.getHours() + 1);
-          setEndTime(oneHourLater);
-          setModalVisible(true);
-        }}
+        style={[styles.fab, { bottom: 20 + insets.bottom }]}
+        onPress={handleAddNew}
       >
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
@@ -327,11 +509,13 @@ export default function CalendarScreen() {
         visible={modalVisible}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={resetModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t("calendar.newEvent")}</Text>
+            <Text style={styles.modalTitle}>
+              {isEditMode ? t("calendar.editEvent") : t("calendar.newEvent")}
+            </Text>
             <Text style={{ marginBottom: 15, color: "#666" }}>
               {t("calendar.date")}: {selectedDate}
             </Text>
@@ -341,6 +525,7 @@ export default function CalendarScreen() {
               placeholder={t("calendar.eventPlaceholder")}
               value={newTitle}
               onChangeText={setNewTitle}
+              multiline
             />
 
             <View style={styles.timeRow}>
@@ -394,15 +579,30 @@ export default function CalendarScreen() {
             )}
 
             <View style={styles.modalButtons}>
+              {isEditMode && (
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.deleteBtn]}
+                  onPress={() => {
+                    if (editingEvent) {
+                      resetModal();
+                      handleDeleteEvent(editingEvent);
+                    }
+                  }}
+                >
+                  <Text style={{ color: "white" }}>{t("common.delete")}</Text>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: "#E5E5E5" }]}
-                onPress={() => setModalVisible(false)}
+                style={[styles.modalBtn, styles.cancelBtn]}
+                onPress={resetModal}
               >
                 <Text>{t("common.cancel")}</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: "#007AFF" }]}
-                onPress={handleAddEvent}
+                style={[styles.modalBtn, styles.saveBtn]}
+                onPress={handleSaveEvent}
               >
                 <Text style={{ color: "white" }}>{t("common.save")}</Text>
               </TouchableOpacity>
@@ -416,6 +616,12 @@ export default function CalendarScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+  },
   calendar: { borderBottomWidth: 1, borderColor: "#E5E5E5", paddingBottom: 10 },
   listContainer: { flex: 1, padding: 20 },
   headerTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 15 },
@@ -449,6 +655,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   modalOverlay: {
     flex: 1,
@@ -471,9 +681,29 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     fontSize: 16,
+    maxHeight: 100,
   },
-  modalButtons: { flexDirection: "row", gap: 10, width: "100%", marginTop: 20 },
-  modalBtn: { flex: 1, padding: 12, borderRadius: 8, alignItems: "center" },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+    marginTop: 20,
+  },
+  modalBtn: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  deleteBtn: {
+    backgroundColor: "#FF3B30",
+  },
+  cancelBtn: {
+    backgroundColor: "#E5E5E5",
+  },
+  saveBtn: {
+    backgroundColor: "#007AFF",
+  },
   timeRow: {
     flexDirection: "row",
     alignItems: "center",

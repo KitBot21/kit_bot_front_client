@@ -13,7 +13,25 @@
     "retry": "다시 시도",
     "success": "성공",
     "complete": "완료",
-    "goBack": "돌아가기"
+    "goBack": "돌아가기",
+    "unknownError": "알 수 없는 오류"
+  },
+  "time": {
+    "justNow": "방금 전",
+    "minutesAgo": "{{count}}분 전",
+    "hoursAgo": "{{count}}시간 전",
+    "daysAgo": "{{count}}일 전"
+  },
+  "postDetail": {
+    "answerCount": "답변 {{count}}개",
+    "emptyComment": "첫 번째 답변을 작성해보세요!",
+    "loading": "게시글을 불러오는 중...",
+    "loadPostError": "게시글을 불러올 수 없습니다",
+    "loadCommentError": "댓글을 불러올 수 없습니다",
+    "notFound": "게시글을 찾을 수 없습니다",
+    "commentPlaceholder": "댓글을 입력하세요...",
+    "authRequired": "학교 인증이 필요한 서비스입니다.",
+    "replyTo": "@{{name}}에게 답글"
   },
   "header": {
     "menu": "메뉴",
@@ -21,7 +39,9 @@
     "settings": "설정",
     "selectLanguage": "언어 선택",
     "korean": "한국어",
-    "english": "English"
+    "english": "English",
+    "languageChangeTitle": "언어 변경",
+    "languageChangeConfirm": "언어 변경 시 대화 내용이 초기화됩니다. 계속하시겠습니까?"
   },
   "tabs": {
     "chatbot": "챗봇",
@@ -31,7 +51,10 @@
     "title": "알림",
     "empty": "알림이 없습니다",
     "emptyDesc": "키워드를 구독하면 새 공지가 올라올 때\n알림을 받을 수 있어요",
-    "goToNotice": "공지사항 바로가기"
+    "goToNotice": "공지사항 바로가기",
+    "deleteAll": "전체 삭제",
+    "deleteAllTitle": "알림 전체 삭제",
+    "deleteAllConfirm": "모든 알림을 삭제하시겠습니까?"
   },
   "mypage": {
     "nickname": "닉네임",
@@ -47,7 +70,25 @@
     "loginDesc": "마이페이지를 이용하려면\n로그인해주세요",
     "googleLogin": "Google로 로그인",
     "notVerified": "학교 인증 필요",
-    "verified": "금오공대 인증됨"
+    "verified": "금오공대 인증됨",
+    "editNickname": "닉네임 수정",
+    "newNickname": "새 닉네임",
+    "nicknamePlaceholder": "닉네임을 입력하세요",
+    "nicknameHint": "2-10자, 한글/영문/숫자만 사용 가능",
+    "withdraw": "회원탈퇴",
+    "withdrawing": "탈퇴 처리 중...",
+    "withdrawTitle": "회원탈퇴",
+    "withdrawConfirm": "정말 탈퇴하시겠습니까?\n탈퇴 후 30일간 데이터가 보관되며, 이후 완전히 삭제됩니다.",
+    "withdrawFinalTitle": "최종 확인",
+    "withdrawFinalConfirm": "회원탈퇴를 진행하시겠습니까?\n이 작업은 되돌릴 수 없습니다.",
+    "withdrawComplete": "탈퇴 완료",
+    "withdrawCompleteDesc": "그동안 이용해주셔서 감사합니다.",
+    "withdrawFailed": "탈퇴 처리 중 오류가 발생했습니다.",
+    "pushNotification": "푸시 알림",
+    "osNotificationDisabled": "시스템 알림 꺼짐",
+    "osNotificationDisabledDesc": "시스템 설정에서 알림이 꺼져있습니다. 설정으로 이동하시겠습니까?",
+    "goToSettings": "설정으로 이동",
+    "systemOff": "시스템 꺼짐"
   },
   "keywords": {
     "SCHOLARSHIP": "장학",
@@ -61,8 +102,18 @@
     "loginRequired": "로그인이 필요합니다",
     "nicknameSet": "닉네임 설정",
     "nicknamePlaceholder": "닉네임을 입력하세요",
-    "loginSubtitle": "게시판을 이용하려면\nGoogle 계정으로 로그인해주세요",
-    "googleLogin": "Google로 로그인"
+    "loginSubtitle": "Google 계정으로 로그인해주세요",
+    "googleLogin": "Google로 로그인",
+    "verificationRequired": "학교 인증 필요",
+    "verificationRequiredDesc": "이 기능을 사용하려면 학교 인증이 필요합니다.",
+    "verify": "인증하기",
+    "loginSuccess": "로그인 성공",
+    "welcomeMessage": "환영합니다, {{username}}님!",
+    "error": "오류",
+    "googleTokenError": "구글 토큰을 가져오지 못했습니다.",
+    "playServicesError": "Google Play 서비스를 사용할 수 없습니다.",
+    "loginFailed": "로그인 실패",
+    "serverError": "서버와 통신 중 문제가 발생했습니다."
   },
   "board": {
     "title": "게시판",
@@ -85,13 +136,18 @@
     "generating": "답변을 생성 중입니다...",
     "error": "오류가 발생했습니다",
     "sources": "관련 출처",
-    "addToCalendar": "캘린더에 일정 등록하기"
+    "addToCalendar": "캘린더에 일정 등록하기",
+    "popularKeywords": "🔥 인기 검색어",
+    "askOnBoard": "게시판에 질문하기"
   },
   "calendar": {
     "events": "일정",
     "noEvents": "일정이 없습니다.",
     "allDay": "종일",
     "newEvent": "새 일정 등록",
+    "editEvent": "일정 수정",
+    "deleteEvent": "일정 삭제",
+    "deleteConfirm": "이 일정을 삭제하시겠습니까?",
     "date": "날짜",
     "eventPlaceholder": "일정 내용을 입력하세요",
     "start": "시작",
@@ -99,7 +155,11 @@
     "reminder": "10분 전 알림 받기",
     "enterContent": "내용을 입력해주세요.",
     "eventCreated": "일정이 등록되었습니다.",
-    "eventCreateError": "일정 등록 중 오류가 발생했습니다."
+    "eventUpdated": "일정이 수정되었습니다.",
+    "eventDeleted": "일정이 삭제되었습니다.",
+    "eventCreateError": "일정 등록 중 오류가 발생했습니다.",
+    "eventDeleteError": "일정 삭제에 실패했습니다.",
+    "loginRequired": "캘린더를 사용하려면 로그인이 필요합니다."
   },
   "postWrite": {
     "title": "질문 하기",
@@ -120,14 +180,25 @@
     "deleteFailed": "게시글 삭제에 실패했습니다."
   },
   "schoolAuth": {
-    "title": "금오공대 학생 인증",
-    "subtitle": "게시글 작성을 위해\n학교 웹메일 인증이 필요합니다.",
+    "title": "학교 인증",
+    "subtitle": "금오공대 학생임을 인증해주세요.\n학교 이메일로 인증번호가 발송됩니다.",
     "studentId": "학번",
+    "studentIdPlaceholder": "학번 입력",
     "verificationCode": "인증번호",
-    "codePlaceholder": "메일로 온 6자리 숫자",
+    "codeHint": "박스를 터치하면 입력할 수 있어요",
     "getCode": "인증번호 받기",
-    "verify": "인증 완료",
-    "reenter": "학번 다시 입력하기"
+    "verify": "인증하기",
+    "reenter": "학번 다시 입력하기",
+    "invalidStudentId": "올바른 학번을 입력해주세요.",
+    "sendComplete": "전송 완료",
+    "sendCompleteDesc": "학교 메일(@kumoh.ac.kr)로 인증번호를 보냈습니다.",
+    "sendFailed": "메일 전송에 실패했습니다. 다시 시도해주세요.",
+    "enterCode": "인증번호를 입력해주세요.",
+    "verifySuccess": "인증 성공",
+    "verifySuccessDesc": "이제 게시글 작성이 가능합니다!",
+    "verifyFailed": "인증 실패",
+    "verifyFailedDesc": "인증번호가 일치하지 않습니다.",
+    "alreadyVerified": "이미 다른 계정에서 인증된 학교 메일입니다."
   },
   "setUsername": {
     "title": "닉네임을 설정해주세요",
@@ -136,9 +207,13 @@
     "helperText": "한글, 영문, 숫자, 밑줄 사용 가능",
     "lengthError": "닉네임은 2자 이상 10자 이하여야 합니다.",
     "formatError": "닉네임은 한글, 영문, 숫자, 밑줄만 사용할 수 있습니다.",
-    "duplicateError": "이미 사용 중인 닉네임입니다.",
     "success": "닉네임이 설정되었습니다!",
-    "failed": "닉네임 설정에 실패했습니다."
+    "failed": "닉네임 설정에 실패했습니다.",
+    "minLengthError": "2자 이상 입력해주세요",
+    "maxLengthError": "10자 이하로 입력해주세요",
+    "invalidCharError": "한글, 영문, 숫자만 사용 가능합니다",
+    "duplicateError": "이미 사용 중인 닉네임입니다",
+    "cancelConfirm": "닉네임을 설정하지 않으면 로그아웃됩니다.\n정말 취소하시겠습니까?"
   },
   "postEdit": {
     "title": "게시글 수정",
@@ -183,5 +258,9 @@
     "reporting": "신고 중...",
     "reportComplete": "신고 완료",
     "reportSuccess": "신고가 완료되었습니다."
+  },
+  "push": {
+    "permissionRequired": "알림 권한을 허용해야 알림을 받을 수 있습니다!",
+    "emulatorNotSupported": "에뮬레이터에서는 푸시 알림이 안 됩니다. 실제 폰으로 테스트하세요."
   }
 }

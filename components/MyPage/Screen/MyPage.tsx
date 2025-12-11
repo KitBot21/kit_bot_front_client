@@ -1,24 +1,20 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Platform,
   FlatList,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useAuth } from "@/components/contexts/AuthContext";
 import { useMyPosts } from "@/components/hooks/postQuery";
 import { Post } from "@/components/api/types/APITypes/postTypes";
 import { useGoogleAuth } from "@/components/hooks/useGoogleAuth";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useTranslation } from "react-i18next";
-
+import { useWithdraw } from "@/components/hooks/useUsers";
 import {
   useNoticeKeywords,
   useMyKeywords,
@@ -27,12 +23,53 @@ import {
 import { useNavigation } from "expo-router";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/App";
+import { Switch } from "react-native";
+import { updateNotificationEnabled } from "@/components/api/services/chatApi";
+import { useState, useEffect } from "react";
+import * as Notifications from "expo-notifications";
+import { Linking } from "react-native";
 
 export default function MyPageScreen() {
-  const router = useRouter();
-  const { user, updateUser, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isAuthLoading, updateUser } = useAuth();
   const { signOut } = useGoogleAuth();
   const { t } = useTranslation();
+  const [notificationEnabled, setNotificationEnabled] = useState<
+    boolean | null
+  >(null);
+  const [osNotificationEnabled, setOsNotificationEnabled] = useState<
+    boolean | null
+  >(null);
+
+  useEffect(() => {
+    const checkOsPermission = async () => {
+      const settings = await Notifications.getPermissionsAsync();
+      setOsNotificationEnabled(settings.granted);
+    };
+
+    checkOsPermission();
+  }, []);
+
+  const openSystemSettings = () => {
+    Alert.alert(
+      t("mypage.osNotificationDisabled"),
+      t("mypage.osNotificationDisabledDesc"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("mypage.goToSettings"),
+          onPress: () => Linking.openSettings(),
+        },
+      ]
+    );
+  };
+
+  useEffect(() => {
+    if (user) {
+      setNotificationEnabled(user.notificationEnabled ?? true);
+    }
+  }, [user]);
+
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const navigate =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -45,6 +82,7 @@ export default function MyPageScreen() {
     isLoading,
     refetch,
   } = useMyPosts();
+  const { mutate: withdraw, isPending: isWithdrawing } = useWithdraw();
 
   const { data: noticeKeywords, isLoading: isKeywordsLoading } =
     useNoticeKeywords();
@@ -52,9 +90,6 @@ export default function MyPageScreen() {
   const { mutate: toggleKeyword, isPending: isToggling } = useToggleKeyword();
 
   const myPosts = data?.pages.flatMap((page) => page.content) ?? [];
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [newNickname, setNewNickname] = useState(user?.username || "");
 
   const isKeywordEnabled = (keyword: string) => {
     if (!myKeywords) return false;
@@ -67,16 +102,19 @@ export default function MyPageScreen() {
     toggleKeyword(keyword);
   };
 
-  const handleSaveNickname = async () => {
-    if (!newNickname.trim()) return;
+  const handleToggleNotification = async (value: boolean) => {
+    setIsUpdating(true);
     try {
+      await updateNotificationEnabled(value);
+      setNotificationEnabled(value);
+
       if (user) {
-        await updateUser({ ...user, username: newNickname });
-        setIsEditing(false);
-        Alert.alert(t("common.confirm"), t("mypage.nicknameChanged"));
+        updateUser({ ...user, notificationEnabled: value });
       }
     } catch (error) {
-      Alert.alert(t("common.error"), t("common.failed"));
+      Alert.alert(t("common.error"), t("mypage.notificationUpdateFailed"));
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -98,7 +136,56 @@ export default function MyPageScreen() {
     navigate.navigate("Login");
   };
 
-  // 로딩 중일 때
+  const handleWithdraw = () => {
+    Alert.alert(t("mypage.withdrawTitle"), t("mypage.withdrawConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("mypage.withdraw"),
+        style: "destructive",
+        onPress: () => {
+          Alert.alert(
+            t("mypage.withdrawFinalTitle"),
+            t("mypage.withdrawFinalConfirm"),
+            [
+              { text: t("common.cancel"), style: "cancel" },
+              {
+                text: t("mypage.withdraw"),
+                style: "destructive",
+                onPress: async () => {
+                  withdraw(undefined, {
+                    onSuccess: async () => {
+                      await signOut();
+                      Alert.alert(
+                        t("mypage.withdrawComplete"),
+                        t("mypage.withdrawCompleteDesc"),
+                        [
+                          {
+                            text: t("common.confirm"),
+                            onPress: () => navigate.replace("MainTabs"),
+                          },
+                        ]
+                      );
+                    },
+                    onError: (error: Error) => {
+                      Alert.alert(
+                        t("common.error"),
+                        error.message || t("mypage.withdrawFailed")
+                      );
+                    },
+                  });
+                },
+              },
+            ]
+          );
+        },
+      },
+    ]);
+  };
+
+  const handleEditNickname = () => {
+    navigate.navigate("EditNickname");
+  };
+
   if (isAuthLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -107,7 +194,6 @@ export default function MyPageScreen() {
     );
   }
 
-  // 로그인 안 된 상태
   if (!user) {
     return (
       <View style={styles.centerContainer}>
@@ -122,9 +208,11 @@ export default function MyPageScreen() {
     );
   }
 
-  // 로그인 된 상태 - 기존 UI
   const renderPostItem = ({ item }: { item: Post }) => (
-    <TouchableOpacity style={styles.postCard}>
+    <TouchableOpacity
+      style={styles.postCard}
+      onPress={() => navigate.navigate("PostDetail", { postId: item.id })}
+    >
       <View style={styles.titleRow}>
         <Text style={styles.postTitle} numberOfLines={1}>
           {item.title}
@@ -153,12 +241,10 @@ export default function MyPageScreen() {
 
   const renderHeader = () => (
     <View>
-      {/* 1. 프로필 섹션 */}
       <View style={styles.profileSection}>
         <Ionicons name="person-circle-outline" size={80} color="#007AFF" />
         <Text style={styles.emailText}>{user?.email || "user@email.com"}</Text>
 
-        {/* role 표시 (학교 인증 상태) */}
         <View style={styles.roleContainer}>
           {user?.role === "guest" ? (
             <TouchableOpacity
@@ -182,49 +268,20 @@ export default function MyPageScreen() {
         </View>
 
         <View style={styles.nicknameContainer}>
-          {isEditing ? (
-            <View style={styles.editRow}>
-              <TextInput
-                style={styles.nicknameInput}
-                value={newNickname}
-                onChangeText={setNewNickname}
-                autoFocus
-                maxLength={10}
-              />
-              <TouchableOpacity
-                onPress={handleSaveNickname}
-                style={styles.saveButton}
-              >
-                <Text style={styles.saveButtonText}>{t("common.save")}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setIsEditing(false)}
-                style={styles.cancelButton}
-              >
-                <Text style={styles.cancelButtonText}>
-                  {t("common.cancel")}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.displayRow}>
-              <Text style={styles.nicknameText}>
-                {user?.username || t("mypage.nicknameEmpty")}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setIsEditing(true)}
-                style={styles.editIcon}
-              >
-                <Ionicons name="pencil" size={16} color="#8E8E93" />
-              </TouchableOpacity>
-            </View>
-          )}
+          <TouchableOpacity
+            style={styles.nicknameRow}
+            onPress={handleEditNickname}
+          >
+            <Text style={styles.nicknameText}>
+              {user?.username || t("mypage.nicknameEmpty")}
+            </Text>
+            <Ionicons name="pencil" size={16} color="#8E8E93" />
+          </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.divider} />
 
-      {/* 2. 키워드 구독 섹션 */}
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Ionicons name="notifications-outline" size={20} color="#333" />
@@ -272,7 +329,40 @@ export default function MyPageScreen() {
 
       <View style={styles.divider} />
 
-      {/* 3. 메뉴 리스트 */}
+      <View style={styles.sectionContainer}>
+        <View style={styles.notificationRow}>
+          <View style={styles.notificationInfo}>
+            <Ionicons name="notifications-outline" size={20} color="#333" />
+            <Text style={styles.notificationText}>
+              {t("mypage.pushNotification")}
+            </Text>
+          </View>
+
+          {osNotificationEnabled === false ? (
+            <TouchableOpacity onPress={openSystemSettings}>
+              <View style={styles.osDisabledBadge}>
+                <Ionicons name="alert-circle" size={16} color="#FF9500" />
+                <Text style={styles.osDisabledText}>
+                  {t("mypage.systemOff")}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ) : notificationEnabled === null ? (
+            <ActivityIndicator size="small" />
+          ) : (
+            <Switch
+              value={notificationEnabled}
+              onValueChange={handleToggleNotification}
+              disabled={isUpdating}
+              trackColor={{ false: "#E5E5E5", true: "#34C759" }}
+              thumbColor="#FFFFFF"
+            />
+          )}
+        </View>
+      </View>
+
+      <View style={styles.divider} />
+
       <View style={styles.menuList}>
         <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
           <Text style={[styles.menuItemText, { color: "#FF3B30" }]}>
@@ -280,11 +370,21 @@ export default function MyPageScreen() {
           </Text>
           <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleWithdraw}
+          disabled={isWithdrawing}
+        >
+          <Text style={[styles.menuItemText, { color: "#8E8E93" }]}>
+            {isWithdrawing ? t("mypage.withdrawing") : t("mypage.withdraw")}
+          </Text>
+          <Ionicons name="person-remove-outline" size={20} color="#8E8E93" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.divider} />
 
-      {/* 4. 내 글 목록 헤더 */}
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Ionicons name="document-text-outline" size={20} color="#333" />
@@ -295,10 +395,7 @@ export default function MyPageScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <View style={{ flex: 1 }}>
       <FlatList
         data={myPosts}
         renderItem={renderPostItem}
@@ -326,14 +423,11 @@ export default function MyPageScreen() {
         refreshing={false}
         onRefresh={refetch}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
-
-  // 로그인 필요 화면
   centerContainer: {
     flex: 1,
     justifyContent: "center",
@@ -370,7 +464,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // 기존 스타일들
   postCard: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
@@ -420,7 +513,6 @@ const styles = StyleSheet.create({
   },
   emailText: { marginTop: 8, fontSize: 14, color: "#8E8E93" },
 
-  // role 표시 스타일
   roleContainer: {
     marginTop: 12,
   },
@@ -453,29 +545,20 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  nicknameContainer: { marginTop: 12, minHeight: 40, justifyContent: "center" },
-  displayRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  nicknameText: { fontSize: 20, fontWeight: "700", color: "#333" },
-  editIcon: { padding: 4 },
-  editRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  nicknameInput: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#007AFF",
-    fontSize: 18,
+  nicknameContainer: {
+    marginTop: 16,
+  },
+  nicknameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  nicknameText: {
+    fontSize: 20,
+    fontWeight: "700",
     color: "#333",
-    paddingVertical: 4,
-    width: 120,
-    textAlign: "center",
   },
-  saveButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  saveButtonText: { color: "#FFF", fontSize: 12, fontWeight: "600" },
-  cancelButton: { paddingHorizontal: 8, paddingVertical: 6 },
-  cancelButtonText: { color: "#8E8E93", fontSize: 12 },
+
   divider: { height: 8, backgroundColor: "#F5F5F5" },
   sectionContainer: { padding: 20 },
   sectionHeader: {
@@ -520,4 +603,33 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   menuItemText: { fontSize: 16, color: "#333" },
+  notificationRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  notificationInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  notificationText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333",
+  },
+  osDisabledBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF3E0",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  osDisabledText: {
+    fontSize: 12,
+    color: "#FF9500",
+    fontWeight: "500",
+  },
 });

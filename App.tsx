@@ -20,35 +20,40 @@ import { usePushNotification } from "./components/hooks/usePushNotification";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import NotificationsScreen from "./components/Notifications/Screen/NotificationsScreen";
 import "./components/i18n";
+import EditNicknameScreen from "./components/MyPage/Screen/EditNicknameScreen";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { queryClient } from "@/components/lib/queryClient";
+import { ActivityIndicator, View } from "react-native";
 
 export type RootStackParamList = {
   MainTabs: undefined;
-  QuestionWrite: undefined;
+  QuestionWrite: { initialTitle?: string } | undefined;
   Login: undefined;
   SetUsername: undefined;
   BoardScreen: undefined;
   PostDetail: { postId: string };
   QuestionEdit: { postId: string };
   MyPageScreen: undefined;
-  Calendar: undefined;
+  Calendar:
+    | {
+        eventText?: string;
+        scheduleTitle?: string;
+        startDate?: string;
+        endDate?: string;
+      }
+    | undefined;
   SchoolAuth: undefined;
   Notifications: undefined;
+  EditNickname: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const queryClient = new QueryClient();
 
 function AppLayout() {
   const navigationRef = useRef<any>(null);
-  const { user } = useAuth();
+  const { user, isLoading, isAuthenticated, isProfileComplete } = useAuth();
   const { expoPushToken, notificationResponse } = usePushNotification();
   const { mutate: saveToken } = useUpdatePushToken();
-
-  useEffect(() => {
-    if (expoPushToken && user) {
-      saveToken(expoPushToken);
-    }
-  }, [expoPushToken, user]);
 
   useEffect(() => {
     if (notificationResponse && navigationRef.current) {
@@ -56,11 +61,19 @@ function AppLayout() {
     }
   }, [notificationResponse]);
 
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  // 로그인 했는데 닉네임 없으면 → 닉네임 설정 강제
+  const needsUsername = isAuthenticated && !isProfileComplete;
+
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "white" }}
-      edges={["top"]} // 👈 상단만 SafeArea 적용
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }} edges={["top"]}>
       <StatusBar
         barStyle="dark-content"
         backgroundColor="#ffffff"
@@ -68,20 +81,36 @@ function AppLayout() {
       />
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator screenOptions={{ header: () => <CommonHeader /> }}>
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="SetUsername" component={SetUsernameScreen} />
-          <Stack.Screen name="QuestionWrite" component={QuestionWrite} />
-          <Stack.Screen name="PostDetail" component={PostDetail} />
-          <Stack.Screen
-            name="QuestionEdit"
-            component={QuestionEdit}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="MyPageScreen" component={MyPageScreen} />
-          <Stack.Screen name="Calendar" component={CalendarScreen} />
-          <Stack.Screen name="SchoolAuth" component={SchoolAuthScreen} />
-          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          {needsUsername ? (
+            <Stack.Screen
+              name="SetUsername"
+              component={SetUsernameScreen}
+              options={{ headerShown: false }}
+            />
+          ) : (
+            <>
+              <Stack.Screen name="MainTabs" component={MainTabs} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="QuestionWrite" component={QuestionWrite} />
+              <Stack.Screen name="PostDetail" component={PostDetail} />
+              <Stack.Screen
+                name="QuestionEdit"
+                component={QuestionEdit}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen name="MyPageScreen" component={MyPageScreen} />
+              <Stack.Screen name="Calendar" component={CalendarScreen} />
+              <Stack.Screen name="SchoolAuth" component={SchoolAuthScreen} />
+              <Stack.Screen
+                name="Notifications"
+                component={NotificationsScreen}
+              />
+              <Stack.Screen
+                name="EditNickname"
+                component={EditNicknameScreen}
+              />
+            </>
+          )}
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>
@@ -91,13 +120,15 @@ function AppLayout() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <KeyboardProvider>
-        <AuthProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardProvider>
           <QueryClientProvider client={queryClient}>
-            <AppLayout />
+            <AuthProvider>
+              <AppLayout />
+            </AuthProvider>
           </QueryClientProvider>
-        </AuthProvider>
-      </KeyboardProvider>
+        </KeyboardProvider>
+      </GestureHandlerRootView>
     </SafeAreaProvider>
   );
 }

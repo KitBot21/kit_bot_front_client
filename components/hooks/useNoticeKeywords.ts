@@ -1,4 +1,3 @@
-// hooks/useNoticeKeywords.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getMyKeywords,
@@ -7,16 +6,14 @@ import {
   getNoticeKeywords,
 } from "../api/services/chatApi";
 
-// 1. 고정 키워드 목록 조회 (5개)
 export const useNoticeKeywords = () => {
   return useQuery({
     queryKey: ["noticeKeywords"],
     queryFn: getNoticeKeywords,
-    staleTime: 1000 * 60 * 60, // 1시간 (고정값이라 자주 안 바뀜)
+    staleTime: 1000 * 60 * 60,
   });
 };
 
-// 2. 내 구독 키워드 조회
 export const useMyKeywords = () => {
   return useQuery({
     queryKey: ["myKeywords"],
@@ -24,7 +21,6 @@ export const useMyKeywords = () => {
   });
 };
 
-// 3. 키워드 구독 토글
 export const useToggleKeyword = () => {
   const queryClient = useQueryClient();
 
@@ -36,7 +32,6 @@ export const useToggleKeyword = () => {
 
       const previousKeywords = queryClient.getQueryData(["myKeywords"]);
 
-      // 낙관적 업데이트
       queryClient.setQueryData<any>(["myKeywords"], (old: any) => {
         if (!old) return old;
 
@@ -49,7 +44,6 @@ export const useToggleKeyword = () => {
                 : item
             );
           } else {
-            // 새로 추가
             return [...old, { keyword, enabled: true }];
           }
         }
@@ -72,7 +66,6 @@ export const useToggleKeyword = () => {
   });
 };
 
-// 4. 키워드 일괄 저장
 export const useUpdateKeywords = () => {
   const queryClient = useQueryClient();
 

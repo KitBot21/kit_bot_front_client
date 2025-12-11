@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Modal,
   TouchableWithoutFeedback,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -44,10 +45,25 @@ export default function CommonHeader() {
   const goToNotifications = () => {
     navigation.navigate("Notifications");
   };
-
   const changeLanguage = (lang: string) => {
-    setStoredLanguage(lang);
-    setLanguageModalVisible(false);
+    if (lang !== i18n.language) {
+      Alert.alert(
+        t("header.languageChangeTitle"),
+        t("header.languageChangeConfirm"),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("common.confirm"),
+            onPress: () => {
+              setStoredLanguage(lang);
+              setLanguageModalVisible(false);
+            },
+          },
+        ]
+      );
+    } else {
+      setLanguageModalVisible(false);
+    }
   };
 
   return (
@@ -90,7 +106,6 @@ export default function CommonHeader() {
         </TouchableOpacity>
       </View>
 
-      {/* 언어 선택 모달 */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -153,7 +168,6 @@ export default function CommonHeader() {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* 메뉴 모달 */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -191,11 +205,6 @@ export default function CommonHeader() {
                       color="#333"
                     />
                     <Text style={styles.menuText}>{t("header.mypage")}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.menuItem}>
-                    <Ionicons name="settings-outline" size={24} color="#333" />
-                    <Text style={styles.menuText}>{t("header.settings")}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -241,7 +250,7 @@ const styles = StyleSheet.create({
   menuContainer: {
     width: "70%",
     backgroundColor: "#FFFFFF",
-    height: "100%", // 👈 flex: 1 대신
+    height: "100%",
     paddingHorizontal: 20,
     shadowColor: "#000",
     shadowOffset: {

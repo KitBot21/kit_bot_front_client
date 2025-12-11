@@ -1,4 +1,3 @@
-// components/i18n/index.ts
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -8,17 +7,27 @@ import en from "./locales/en.json";
 
 const LANGUAGE_KEY = "app_language";
 
-// 저장된 언어 불러오기
-const getStoredLanguage = async () => {
-  try {
-    const lang = await AsyncStorage.getItem(LANGUAGE_KEY);
-    return lang || "ko";
-  } catch {
-    return "ko";
-  }
-};
+i18n.use(initReactI18next).init({
+  resources: {
+    ko: { translation: ko },
+    en: { translation: en },
+  },
+  lng: "ko",
+  fallbackLng: "ko",
+  interpolation: {
+    escapeValue: false,
+  },
+});
 
-// 언어 저장하기
+AsyncStorage.getItem(LANGUAGE_KEY).then((lang) => {
+  console.log("🌐 저장된 언어:", lang);
+  console.log("🌐 현재 i18n 언어:", i18n.language);
+
+  if (lang && lang !== i18n.language) {
+    i18n.changeLanguage(lang);
+  }
+});
+
 export const setStoredLanguage = async (lang: string) => {
   try {
     await AsyncStorage.setItem(LANGUAGE_KEY, lang);
@@ -27,20 +36,5 @@ export const setStoredLanguage = async (lang: string) => {
     console.error("언어 저장 실패:", e);
   }
 };
-
-// 초기화
-getStoredLanguage().then((lang) => {
-  i18n.use(initReactI18next).init({
-    resources: {
-      ko: { translation: ko },
-      en: { translation: en },
-    },
-    lng: lang,
-    fallbackLng: "ko",
-    interpolation: {
-      escapeValue: false,
-    },
-  });
-});
 
 export default i18n;

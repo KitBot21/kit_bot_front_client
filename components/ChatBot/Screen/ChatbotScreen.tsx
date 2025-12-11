@@ -10,6 +10,7 @@ import {
   Linking,
   ActivityIndicator,
   Keyboard,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -21,6 +22,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SourceDTO } from "@/components/api/types/APITypes/chat_types";
 import { usePostChatQuery } from "@/components/hooks/usePostChatQuery";
 import { RootStackParamList } from "@/App";
+import { usePopularKeywords } from "@/components/hooks/usePopularKeywords";
+import { fetchLatestQuestionByKeyword } from "@/components/api/services/chatApi";
+import { useAuth } from "@/components/contexts/AuthContext";
 
 interface Message {
   id: string;
@@ -29,26 +33,48 @@ interface Message {
   timestamp: Date;
   sources?: SourceDTO[];
   isDate?: boolean;
+  scheduleTitle?: string;
+  startDate?: string;
+  endDate?: string;
+  originalQuestion?: string;
 }
 
 export default function ChatbotScreen() {
   const insets = useSafeAreaInsets();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const { user } = useAuth();
 
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text: t("chat.greeting"),
-      sender: "bot",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
+  const [lastUserQuestion, setLastUserQuestion] = useState("");
   const flatListRef = useRef<FlatList>(null);
+
+  const {
+    data: popularKeywords,
+    isLoading: isKeywordsLoading,
+    error,
+  } = usePopularKeywords({ size: 5 });
+
+  useEffect(() => {
+    console.log("🔍 인기 키워드 로딩:", isKeywordsLoading);
+    console.log("🔍 인기 키워드 데이터:", popularKeywords);
+    console.log("🔍 인기 키워드 에러:", error);
+  }, [popularKeywords, isKeywordsLoading, error]);
+
+  useEffect(() => {
+    setMessages([
+      {
+        id: "1",
+        text: t("chat.greeting"),
+        sender: "bot",
+        timestamp: new Date(),
+      },
+    ]);
+  }, [i18n.language, t]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", () => {
@@ -73,6 +99,10 @@ export default function ChatbotScreen() {
         timestamp: new Date(),
         sources: data.sources,
         isDate: data.isDate,
+        scheduleTitle: data.scheduleTitle,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        originalQuestion: lastUserQuestion,
       };
       setMessages((prev) => [...prev, botMessage]);
     },
@@ -83,6 +113,7 @@ export default function ChatbotScreen() {
         text: `${t("chat.error")}: ${error.message}`,
         sender: "bot",
         timestamp: new Date(),
+        originalQuestion: lastUserQuestion,
       };
       setMessages((prev) => [...prev, errorMessage]);
     },
@@ -97,27 +128,105 @@ export default function ChatbotScreen() {
     }
   }, [messages]);
 
-  const sendMessage = () => {
-    if (inputText.trim() === "" || isPending) return;
+  const sendMessage = (text?: string) => {
+    const messageText = text || inputText;
+    if (messageText.trim() === "" || isPending) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputText,
+      text: messageText,
       sender: "user",
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMessage]);
+    setLastUserQuestion(messageText);
 
-    sendQuery(inputText);
+    sendQuery(messageText);
     setInputText("");
   };
 
-  const handleGoToCalendar = (messageText: string) => {
-    navigation.navigate("Calendar");
+  const handleKeywordPress = async (keyword: string) => {
+    if (isPending) return;
+
+    try {
+      const latestQuestion = await fetchLatestQuestionByKeyword(keyword);
+
+      if (latestQuestion && latestQuestion.question) {
+        sendMessage(latestQuestion.question);
+      } else {
+        sendMessage(keyword);
+      }
+    } catch (error) {
+      console.error("최신 질문 조회 실패:", error);
+      sendMessage(keyword);
+    }
+  };
+
+  const handleGoToCalendar = (message: Message) => {
+    navigation.navigate("Calendar", {
+      eventText: message.text,
+      scheduleTitle: message.scheduleTitle,
+      startDate: message.startDate,
+      endDate: message.endDate,
+    });
+  };
+
+  const handleAskOnBoard = (question: string) => {
+    if (!user) {
+      Alert.alert(t("auth.loginRequired"), t("auth.loginSubtitle"), [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("auth.login"), onPress: () => navigation.navigate("Login") },
+      ]);
+      return;
+    }
+
+    if (user.role === "guest") {
+      Alert.alert(
+        t("auth.verificationRequired"),
+        t("auth.verificationRequiredDesc"),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("auth.verify"),
+            onPress: () => navigation.navigate("SchoolAuth"),
+          },
+        ]
+      );
+      return;
+    }
+
+    navigation.navigate("QuestionWrite", {
+      initialTitle: question,
+    });
+  };
+
+  const renderPopularKeywords = () => {
+    if (isKeywordsLoading) return null;
+    if (!popularKeywords || popularKeywords.length === 0) return null;
+
+    return (
+      <View style={styles.keywordsContainer}>
+        <Text style={styles.keywordsTitle}>{t("chat.popularKeywords")}</Text>
+        <View style={styles.keywordsColumn}>
+          {popularKeywords.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.keywordChip}
+              onPress={() => handleKeywordPress(item.keyword)}
+              disabled={isPending}
+            >
+              <Text style={styles.keywordText}>{item.keyword}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isUser = item.sender === "user";
+    const isGreeting = item.id === "1";
+
     return (
       <View
         style={[
@@ -138,11 +247,23 @@ export default function ChatbotScreen() {
           {!isUser && item.isDate && (
             <TouchableOpacity
               style={styles.calendarButton}
-              onPress={() => handleGoToCalendar(item.text)}
+              onPress={() => handleGoToCalendar(item)}
             >
-              <Ionicons name="calendar-outline" size={16} color="#007AFF" />
+              <Ionicons name="calendar-outline" size={18} color="#FFFFFF" />
               <Text style={styles.calendarButtonText}>
                 {t("chat.addToCalendar")}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {!isUser && !isGreeting && item.originalQuestion && (
+            <TouchableOpacity
+              style={styles.askBoardButton}
+              onPress={() => handleAskOnBoard(item.originalQuestion!)}
+            >
+              <Ionicons name="chatbubbles-outline" size={18} color="#007AFF" />
+              <Text style={styles.askBoardButtonText}>
+                {t("chat.askOnBoard")}
               </Text>
             </TouchableOpacity>
           )}
@@ -150,10 +271,12 @@ export default function ChatbotScreen() {
           {!isUser && item.sources && item.sources.length > 0 && (
             <View style={styles.sourceContainer}>
               <Text style={styles.sourceTitle}>{t("chat.sources")}:</Text>
-              {item.sources.map((source) => (
+              {item.sources.map((source, index) => (
                 <TouchableOpacity
-                  key={source.docId}
-                  onPress={() => Linking.openURL(source.link)}
+                  key={source.docId || index}
+                  onPress={() => {
+                    if (source.link) Linking.openURL(source.link);
+                  }}
                 >
                   <Text style={styles.sourceLink} numberOfLines={1}>
                     - {source.title}
@@ -176,6 +299,7 @@ export default function ChatbotScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messageList}
         keyboardDismissMode="interactive"
+        ListHeaderComponent={renderPopularKeywords}
       />
 
       {isPending && (
@@ -204,6 +328,7 @@ export default function ChatbotScreen() {
             value={inputText}
             onChangeText={setInputText}
             placeholder={t("chat.placeholder")}
+            placeholderTextColor="#8E8E93"
             multiline
             editable={!isPending}
           />
@@ -213,7 +338,7 @@ export default function ChatbotScreen() {
               (inputText.trim() === "" || isPending) &&
                 styles.sendButtonDisabled,
             ]}
-            onPress={sendMessage}
+            onPress={() => sendMessage()}
             disabled={inputText.trim() === "" || isPending}
           >
             <Ionicons
@@ -306,15 +431,66 @@ const styles = StyleSheet.create({
   calendarButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
-    padding: 8,
-    backgroundColor: "#F0F8FF",
-    borderRadius: 8,
-    alignSelf: "flex-start",
+    justifyContent: "center",
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#007AFF",
+    borderRadius: 20,
+    gap: 6,
   },
   calendarButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  askBoardButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#007AFF",
+    gap: 6,
+  },
+  askBoardButtonText: {
     color: "#007AFF",
     fontSize: 14,
     fontWeight: "600",
+  },
+  keywordsContainer: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 18,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+  keywordsTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#555",
+    marginBottom: 12,
+  },
+  keywordsColumn: {
+    flexDirection: "column",
+    gap: 8,
+  },
+  keywordChip: {
+    backgroundColor: "#F0F0F0",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  keywordText: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "500",
   },
 });

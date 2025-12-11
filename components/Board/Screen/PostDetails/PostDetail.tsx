@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import PostContent from "./PostContent";
 import CommentItem from "./CommentItem";
@@ -26,10 +27,18 @@ import { usePost } from "@/components/hooks/postQuery";
 import { useAuth } from "@/components/contexts/AuthContext";
 import { useNavigation } from "expo-router";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { KeyboardStickyView } from "react-native-keyboard-controller";
+import {
+  KeyboardStickyView,
+  useReanimatedKeyboardAnimation,
+} from "react-native-keyboard-controller";
+import { useTranslation } from "react-i18next";
+import { FlatListProps } from "react-native";
 
 type PostDetailRouteProp = RouteProp<RootStackParamList, "PostDetail">;
 
+const AnimatedFlatList = Animated.createAnimatedComponent(
+  FlatList as React.ComponentType<FlatListProps<CommentResponseDTO>>
+);
 function CommentItemWithReplies({
   comment,
   onAdoptAnswer,
@@ -52,6 +61,7 @@ function CommentItemWithReplies({
 }
 
 export default function PostDetail() {
+  const { t } = useTranslation();
   const route = useRoute<PostDetailRouteProp>();
   const postId = route.params?.postId;
   const navigation =
@@ -62,12 +72,25 @@ export default function PostDetail() {
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyAuthor, setReplyAuthor] = useState<string>("");
 
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
+  const [inputHeight, setInputHeight] = useState(60);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    paddingBottom: keyboardHeight.value + inputHeight,
+  }));
+
   const {
     data: post,
     isLoading: isPostLoading,
     error: postError,
     refetch: refetchPost,
   } = usePost(postId);
+
+  useEffect(() => {
+    if (post) {
+      console.log("📦 게시글 응답:", JSON.stringify(post, null, 2));
+    }
+  }, [post]);
 
   const {
     data: comments = [],
@@ -83,7 +106,6 @@ export default function PostDetail() {
         postId,
         content: text,
         parentId: replyTo,
-        authorId: user?.id,
       },
       {
         onSuccess: () => {
@@ -96,12 +118,12 @@ export default function PostDetail() {
 
   const handleAuthRequest = () => {
     Alert.alert(
-      "권한 없음",
-      "댓글을 작성하려면 학교 인증이 필요합니다.\n인증하러 가시겠습니까?",
+      t("auth.verificationRequired"),
+      t("auth.verificationRequiredDesc"),
       [
-        { text: "취소", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "인증하기",
+          text: t("auth.verify"),
           onPress: () => navigation.navigate("SchoolAuth"),
         },
       ]
@@ -132,7 +154,7 @@ export default function PostDetail() {
         <PostContent post={post} />
         <View style={styles.commentHeaderContainer}>
           <Text style={styles.commentHeaderTitle}>
-            답변 {comments.length}개
+            {t("postDetail.answerCount", { count: comments.length })}
           </Text>
         </View>
       </>
@@ -143,7 +165,7 @@ export default function PostDetail() {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="chatbubble-outline" size={48} color="#C7C7CC" />
-        <Text style={styles.emptyText}>첫 번째 답변을 작성해보세요!</Text>
+        <Text style={styles.emptyText}>{t("postDetail.emptyComment")}</Text>
       </View>
     );
   };
@@ -152,22 +174,22 @@ export default function PostDetail() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>게시글을 불러오는 중...</Text>
+        <Text style={styles.loadingText}>{t("postDetail.loading")}</Text>
       </View>
     );
   }
 
   if (postError || commentsError) {
     const errorMessage =
-      postError?.message || commentsError?.message || "알 수 없는 오류";
+      postError?.message || commentsError?.message || t("common.unknownError");
 
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={48} color="#FF3B30" />
         <Text style={styles.errorText}>
           {postError
-            ? "게시글을 불러올 수 없습니다"
-            : "댓글을 불러올 수 없습니다"}
+            ? t("postDetail.loadPostError")
+            : t("postDetail.loadCommentError")}
         </Text>
         <Text style={styles.errorDetailText}>{errorMessage}</Text>
         <Text style={styles.errorDetailText}>postId: {postId}</Text>
@@ -175,7 +197,7 @@ export default function PostDetail() {
           style={styles.retryButton}
           onPress={() => refetchPost()}
         >
-          <Text style={styles.retryButtonText}>다시 시도</Text>
+          <Text style={styles.retryButtonText}>{t("common.retry")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -185,7 +207,7 @@ export default function PostDetail() {
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={48} color="#8E8E93" />
-        <Text style={styles.errorText}>게시글을 찾을 수 없습니다</Text>
+        <Text style={styles.errorText}>{t("postDetail.notFound")}</Text>
         <Text style={styles.errorDetailText}>postId: {postId}</Text>
       </View>
     );
@@ -193,7 +215,7 @@ export default function PostDetail() {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <AnimatedFlatList
         data={comments}
         renderItem={({ item }) => (
           <CommentItemWithReplies
@@ -206,6 +228,7 @@ export default function PostDetail() {
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
+        style={animatedStyle}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
@@ -217,22 +240,25 @@ export default function PostDetail() {
           opened: Platform.OS === "ios" ? 20 : 0,
         }}
       >
-        <CommentInput
-          ref={inputRef}
-          onSubmit={handleAddComment}
-          isSubmitting={createCommentMutation.isPending}
-          replyTo={replyAuthor}
-          onCancelReply={() => {
-            setReplyTo(null);
-            setReplyAuthor("");
-          }}
-          placeholder={
-            canWrite
-              ? "댓글을 입력하세요..."
-              : "학교 인증이 필요한 서비스입니다."
-          }
-          editable={canWrite}
-        />
+        <View onLayout={(e) => setInputHeight(e.nativeEvent.layout.height)}>
+          <CommentInput
+            ref={inputRef}
+            onSubmit={handleAddComment}
+            isSubmitting={createCommentMutation.isPending}
+            replyTo={replyAuthor}
+            onCancelReply={() => {
+              setReplyTo(null);
+              setReplyAuthor("");
+            }}
+            placeholder={
+              canWrite
+                ? t("postDetail.commentPlaceholder")
+                : t("postDetail.authRequired")
+            }
+            editable={canWrite}
+            onAuthRequest={handleAuthRequest}
+          />
+        </View>
       </KeyboardStickyView>
     </View>
   );

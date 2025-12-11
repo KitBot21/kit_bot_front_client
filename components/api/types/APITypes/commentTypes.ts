@@ -2,10 +2,8 @@ export interface CommentCreateRequest {
   postId: string;
   content: string;
   parentId?: string | null;
-  authorId: string | undefined;
 }
 
-// CommentTypes.ts
 export interface CommentResponseDTO {
   id: string;
   postId: string;
@@ -17,6 +15,6 @@ export interface CommentResponseDTO {
   reportCount: number;
   createdAt: string;
   status: string;
-  isRecommended: boolean; // 추가
-  isReported: boolean; // 추가
+  isRecommended: boolean;
+  isReported: boolean;
 }

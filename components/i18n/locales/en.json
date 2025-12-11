@@ -13,7 +13,14 @@
     "success": "Success",
     "error": "Error",
     "complete": "Done",
-    "goBack": "Go Back"
+    "goBack": "Go Back",
+    "unknownError": "Unknown error"
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
   },
   "header": {
     "menu": "Menu",
@@ -21,7 +28,20 @@
     "settings": "Settings",
     "selectLanguage": "Select Language",
     "korean": "한국어",
-    "english": "English"
+    "english": "English",
+    "languageChangeTitle": "Change Language",
+    "languageChangeConfirm": "Changing language will reset the conversation. Continue?"
+  },
+  "postDetail": {
+    "answerCount": "{{count}} Answers",
+    "emptyComment": "Be the first to answer!",
+    "loading": "Loading post...",
+    "loadPostError": "Failed to load post",
+    "loadCommentError": "Failed to load comments",
+    "notFound": "Post not found",
+    "commentPlaceholder": "Write a comment...",
+    "authRequired": "School verification required.",
+    "replyTo": "Reply to @{{name}}"
   },
   "tabs": {
     "chatbot": "Chatbot",
@@ -31,7 +51,10 @@
     "title": "Notifications",
     "empty": "No notifications",
     "emptyDesc": "Subscribe to keywords to receive\nnotifications for new announcements",
-    "goToNotice": "Go to Notice"
+    "goToNotice": "Go to Notice",
+    "deleteAll": "Delete All",
+    "deleteAllTitle": "Delete All Notifications",
+    "deleteAllConfirm": "Are you sure you want to delete all notifications?"
   },
   "mypage": {
     "nickname": "Nickname",
@@ -47,7 +70,25 @@
     "loginDesc": "Please login to\naccess My Page",
     "googleLogin": "Login with Google",
     "notVerified": "Verification needed",
-    "verified": "Kumoh verified"
+    "verified": "Kumoh verified",
+    "editNickname": "Edit Nickname",
+    "newNickname": "New Nickname",
+    "nicknamePlaceholder": "Enter nickname",
+    "nicknameHint": "2-10 characters, Korean/English/numbers only",
+    "withdraw": "Delete Account",
+    "withdrawing": "Processing...",
+    "withdrawTitle": "Delete Account",
+    "withdrawConfirm": "Are you sure you want to delete your account?\nYour data will be kept for 30 days before permanent deletion.",
+    "withdrawFinalTitle": "Final Confirmation",
+    "withdrawFinalConfirm": "Proceed with account deletion?\nThis action cannot be undone.",
+    "withdrawComplete": "Account Deleted",
+    "withdrawCompleteDesc": "Thank you for using our service.",
+    "withdrawFailed": "Failed to delete account.",
+    "pushNotification": "Push Notification",
+    "osNotificationDisabled": "System Notification Off",
+    "osNotificationDisabledDesc": "Notifications are disabled in system settings. Go to settings?",
+    "goToSettings": "Go to Settings",
+    "systemOff": "System Off"
   },
   "keywords": {
     "SCHOLARSHIP": "Scholarship",
@@ -59,10 +100,20 @@
   "auth": {
     "login": "Login",
     "loginRequired": "Login Required",
-    "loginSubtitle": "Please sign in with your\nGoogle account to use the board",
+    "loginSubtitle": "Please sign in with your Google account ",
     "googleLogin": "Sign in with Google",
     "nicknameSet": "Set Nickname",
-    "nicknamePlaceholder": "Enter nickname"
+    "nicknamePlaceholder": "Enter nickname",
+    "verificationRequired": "School Verification Required",
+    "verificationRequiredDesc": "School verification is required to use this feature.",
+    "verify": "Verify",
+    "loginSuccess": "Login Success",
+    "welcomeMessage": "Welcome, {{username}}!",
+    "error": "Error",
+    "googleTokenError": "Failed to get Google token.",
+    "playServicesError": "Google Play services are not available.",
+    "loginFailed": "Login Failed",
+    "serverError": "An error occurred while communicating with the server."
   },
   "board": {
     "title": "Board",
@@ -85,13 +136,18 @@
     "generating": "Generating response...",
     "error": "An error occurred",
     "sources": "Related sources",
-    "addToCalendar": "Add to Calendar"
+    "addToCalendar": "Add to Calendar",
+    "popularKeywords": "🔥 Popular Keywords",
+    "askOnBoard": "Ask on Board"
   },
   "calendar": {
     "events": "Events",
     "noEvents": "No events.",
     "allDay": "All day",
     "newEvent": "New Event",
+    "editEvent": "Edit Event",
+    "deleteEvent": "Delete Event",
+    "deleteConfirm": "Are you sure you want to delete this event?",
     "date": "Date",
     "eventPlaceholder": "Enter event details",
     "start": "Start",
@@ -99,7 +155,11 @@
     "reminder": "Remind me 10 min before",
     "enterContent": "Please enter content.",
     "eventCreated": "Event has been created.",
-    "eventCreateError": "Failed to create event."
+    "eventUpdated": "Event has been updated.",
+    "eventDeleted": "Event has been deleted.",
+    "eventCreateError": "Failed to create event.",
+    "eventDeleteError": "Failed to delete event.",
+    "loginRequired": "Please login to use the calendar."
   },
   "postWrite": {
     "title": "Ask a Question",
@@ -120,14 +180,25 @@
     "deleteFailed": "Failed to delete post."
   },
   "schoolAuth": {
-    "title": "Kumoh Student Verification",
-    "subtitle": "Email verification is required\nto write posts.",
+    "title": "School Verification",
+    "subtitle": "Verify that you are a Kumoh student.\nA verification code will be sent to your school email.",
     "studentId": "Student ID",
+    "studentIdPlaceholder": "Enter student ID",
     "verificationCode": "Verification Code",
-    "codePlaceholder": "6-digit code from email",
+    "codeHint": "Tap the boxes to enter the code",
     "getCode": "Get Code",
     "verify": "Verify",
-    "reenter": "Re-enter Student ID"
+    "reenter": "Re-enter Student ID",
+    "invalidStudentId": "Please enter a valid student ID.",
+    "sendComplete": "Sent",
+    "sendCompleteDesc": "Verification code sent to your school email (@kumoh.ac.kr).",
+    "sendFailed": "Failed to send email. Please try again.",
+    "enterCode": "Please enter the verification code.",
+    "verifySuccess": "Verification Complete",
+    "verifySuccessDesc": "You can now write posts!",
+    "verifyFailed": "Verification Failed",
+    "verifyFailedDesc": "The verification code is incorrect.",
+    "alreadyVerified": "This school email is already verified by another account."
   },
   "setUsername": {
     "title": "Set Your Nickname",
@@ -136,9 +207,13 @@
     "helperText": "Korean, English, numbers, underscore allowed",
     "lengthError": "Nickname must be 2-10 characters.",
     "formatError": "Only Korean, English, numbers, and underscore allowed.",
-    "duplicateError": "This nickname is already taken.",
     "success": "Nickname has been set!",
-    "failed": "Failed to set nickname."
+    "failed": "Failed to set nickname.",
+    "minLengthError": "Please enter at least 2 characters",
+    "maxLengthError": "Please enter 10 characters or less",
+    "invalidCharError": "Only Korean, English, and numbers are allowed",
+    "duplicateError": "This nickname is already in use",
+    "cancelConfirm": "You will be logged out if you don't set a nickname.\nAre you sure you want to cancel?"
   },
   "postEdit": {
     "title": "Edit Post",
@@ -183,5 +258,9 @@
     "reporting": "Reporting...",
     "reportComplete": "Report Submitted",
     "reportSuccess": "Your report has been submitted."
+  },
+  "push": {
+    "permissionRequired": "Please allow notifications to receive alerts!",
+    "emulatorNotSupported": "Push notifications don't work on emulators. Please test on a real device."
   }
 }

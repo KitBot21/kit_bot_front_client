@@ -1,7 +1,7 @@
-// types/APITypes/postTypes.ts
 export interface Post {
   id: string;
   authorId: string;
+  authorNickname: string;
   title: string;
   content: string;
   status: string;
@@ -51,7 +51,7 @@ export interface MyPostResponse {
   totalPages: number;
   totalElements: number;
   size: number;
-  number: number; // 현재 페이지 번호
+  number: number;
   first: boolean;
   empty: boolean;
 }

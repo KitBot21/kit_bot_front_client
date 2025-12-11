@@ -24,7 +24,7 @@ export default function RenderPost({ item }: { item: Post }) {
   const [showMenuModal, setShowMenuModal] = useState(false);
   const deletePostMutation = useDeletePost();
   const { user } = useAuth();
-  const displayName = user?.username ?? "익명";
+  const displayName = item.authorNickname ?? "익명";
 
   const handlePress = () => {
     navigation.navigate("PostDetail", { postId: item.id });
@@ -72,7 +72,7 @@ export default function RenderPost({ item }: { item: Post }) {
     ]);
   };
 
-  const isMyPost = user && item.authorId === user.id; // 👈 수정
+  const isMyPost = user && item.authorId === user.id;
 
   return (
     <>

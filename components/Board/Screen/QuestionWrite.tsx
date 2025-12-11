@@ -18,14 +18,26 @@ import { useCreatePost } from "@/components/hooks/postQuery";
 import { useTranslation } from "react-i18next";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useAuth } from "@/components/contexts/AuthContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRoute } from "@react-navigation/native";
+import { RouteProp } from "@react-navigation/native";
+type QuestionWriteParams = {
+  initialTitle?: string;
+};
 
 export default function QuestionWrite() {
+  const insets = useSafeAreaInsets();
+
+  const route =
+    useRoute<RouteProp<{ params: QuestionWriteParams }, "params">>();
+  const initialTitle = route.params?.initialTitle || "";
+
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { t } = useTranslation();
   const { user } = useAuth();
 
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState("");
 
   const { mutate: createPost, isPending } = useCreatePost();
@@ -109,6 +121,7 @@ export default function QuestionWrite() {
       <TouchableOpacity
         style={[
           styles.submitButton,
+          { bottom: 16 + insets.bottom },
           (isPending || !title.trim() || !content.trim()) &&
             styles.submitButtonDisabled,
         ]}

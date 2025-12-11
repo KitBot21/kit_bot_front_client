@@ -1,4 +1,3 @@
-// hooks/usePosts.ts
 import {
   useInfiniteQuery,
   useQueryClient,
@@ -43,7 +42,6 @@ export const useCreatePost = () => {
   return useMutation({
     mutationFn: (data: PostCreateRequest) => createPost(data),
     onSuccess: () => {
-      // 게시글 목록 쿼리를 무효화하여 새로고침
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
@@ -55,7 +53,7 @@ export const usePost = (postId: string, enabled: boolean = true) => {
     queryFn: async () => {
       console.log("usePost - fetching postId:", postId);
       const result = await getPost(postId);
-      console.log("usePost - result:", result); // 디버깅 로그
+      console.log("usePost - result:", result);
       return result;
     },
     enabled: enabled,
@@ -67,9 +65,36 @@ export const useToggleRecommendPost = () => {
 
   return useMutation({
     mutationFn: (postId: string) => toggleRecommendPost(postId),
-    onSuccess: (_, postId) => {
+
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ["post", postId] });
+
+      const previousPost = queryClient.getQueryData(["post", postId]);
+
+      queryClient.setQueryData(["post", postId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          recommended: !old.recommended,
+          recommendCount: old.recommended
+            ? old.recommendCount - 1
+            : old.recommendCount + 1,
+        };
+      });
+
+      return { previousPost };
+    },
+
+    onError: (err, postId, context) => {
+      if (context?.previousPost) {
+        queryClient.setQueryData(["post", postId], context.previousPost);
+      }
+    },
+
+    onSettled: (_, __, postId) => {
       queryClient.invalidateQueries({ queryKey: ["post", postId] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["myPosts"] });
     },
   });
 };
@@ -99,9 +124,7 @@ export const useUpdatePost = () => {
       data: PostUpdateRequest;
     }) => updatePost(postId, data),
     onSuccess: (_, { postId }) => {
-      // 게시글 상세 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: ["post", postId] });
-      // 게시글 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
@@ -113,8 +136,8 @@ export const useDeletePost = () => {
   return useMutation({
     mutationFn: (postId: string) => deletePost(postId),
     onSuccess: () => {
-      // 게시글 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["myPosts"] });
     },
   });
 };
@@ -124,7 +147,6 @@ export const useMyPosts = () => {
     queryKey: ["myPosts"],
     queryFn: ({ pageParam = 0 }) => fetchMyPosts(pageParam, 10),
     getNextPageParam: (lastPage) => {
-      // 마지막 페이지가 아니면 다음 페이지 번호(현재 페이지 + 1)를 반환
       return lastPage.last ? undefined : lastPage.number + 1;
     },
     initialPageParam: 0,

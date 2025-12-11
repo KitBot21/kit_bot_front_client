@@ -16,6 +16,10 @@ import {
   useDeleteComment,
 } from "@/components/hooks/commentQuery";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/components/contexts/AuthContext";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/App";
 
 interface CommentItemProps {
   comment: CommentResponseDTO;
@@ -31,6 +35,8 @@ export default function CommentItem({
   onReplyPress,
 }: CommentItemProps) {
   const { t } = useTranslation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [showReplies, setShowReplies] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -42,9 +48,62 @@ export default function CommentItem({
   const toggleRecommendMutation = useToggleRecommendComment();
   const reportMutation = useReportComment();
   const deleteCommentMutation = useDeleteComment();
+  const { user } = useAuth();
+  const isMyComment = user && comment.authorId === user.id;
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInMinutes < 1) {
+      return t("time.justNow");
+    } else if (diffInMinutes < 60) {
+      return t("time.minutesAgo", { count: diffInMinutes });
+    } else if (diffInHours < 24) {
+      return t("time.hoursAgo", { count: diffInHours });
+    } else if (diffInDays < 7) {
+      return t("time.daysAgo", { count: diffInDays });
+    } else {
+      return date.toLocaleDateString("ko-KR");
+    }
+  };
+
+  const checkKumohAuth = () => {
+    if (!user || user.role === "guest") {
+      Alert.alert(
+        t("auth.verificationRequired"),
+        t("auth.verificationRequiredDesc"),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("auth.verify"),
+            onPress: () => navigation.navigate("SchoolAuth"),
+          },
+        ]
+      );
+      return false;
+    }
+    return true;
+  };
 
   const handleToggleRecommend = () => {
+    if (!checkKumohAuth()) return;
     toggleRecommendMutation.mutate(comment.id);
+  };
+
+  const handleReportPress = () => {
+    if (!checkKumohAuth()) return;
+    if (comment.isReported) return;
+    setShowReportModal(true);
+  };
+
+  const handleReplyPress = () => {
+    if (!checkKumohAuth()) return;
+    onReplyPress();
   };
 
   const handleSelectReason = (reason: string) => {
@@ -136,21 +195,26 @@ export default function CommentItem({
           <View style={styles.commentInfo}>
             <Text style={styles.commentAuthor}>{comment.authorName}</Text>
             <Text style={styles.commentTime}>
-              {new Date(comment.createdAt).toLocaleDateString()}
+              {formatDate(comment.createdAt)}
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() => setShowMenuModal(true)}
-          >
-            <Ionicons name="ellipsis-vertical" size={16} color="#8E8E93" />
-          </TouchableOpacity>
+          {isMyComment && (
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => setShowMenuModal(true)}
+            >
+              <Ionicons name="ellipsis-vertical" size={16} color="#8E8E93" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <Text style={styles.commentContent}>{comment.content}</Text>
 
         <View style={styles.commentActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={onReplyPress}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleReplyPress}
+          >
             <Text style={styles.actionText}>{t("comment.reply")}</Text>
           </TouchableOpacity>
 
@@ -172,7 +236,7 @@ export default function CommentItem({
 
             <TouchableOpacity
               style={styles.iconButton}
-              onPress={() => setShowReportModal(true)}
+              onPress={handleReportPress}
               disabled={comment.isReported}
             >
               <Ionicons
@@ -205,42 +269,46 @@ export default function CommentItem({
         )}
       </View>
 
-      {/* 대댓글 렌더링 */}
       {showReplies &&
-        replies.map((reply) => (
-          <View key={reply.id} style={styles.replyContainer}>
-            <Ionicons
-              name="return-down-forward"
-              size={20}
-              color="#8E8E93"
-              style={styles.replyIcon}
-            />
-            <View style={styles.replyCard}>
-              <View style={styles.replyHeader}>
-                <View style={styles.replyAvatar}>
-                  <Ionicons name="person" size={12} color="#fff" />
-                </View>
-                <Text style={styles.replyAuthor}>{reply.authorName}</Text>
-                <Text style={styles.replyTime}>
-                  {new Date(reply.createdAt).toLocaleDateString()}
-                </Text>
-                <TouchableOpacity
-                  style={styles.replyMenuButton}
-                  onPress={() => handleReplyMenuPress(reply.id)}
-                >
-                  <Ionicons
-                    name="ellipsis-vertical"
-                    size={14}
-                    color="#8E8E93"
-                  />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.replyContent}>{reply.content}</Text>
-            </View>
-          </View>
-        ))}
+        replies.map((reply) => {
+          const isMyReply = user && reply.authorId === user.id;
 
-      {/* 댓글 메뉴 모달 */}
+          return (
+            <View key={reply.id} style={styles.replyContainer}>
+              <Ionicons
+                name="return-down-forward"
+                size={20}
+                color="#8E8E93"
+                style={styles.replyIcon}
+              />
+              <View style={styles.replyCard}>
+                <View style={styles.replyHeader}>
+                  <View style={styles.replyAvatar}>
+                    <Ionicons name="person" size={12} color="#fff" />
+                  </View>
+                  <Text style={styles.replyAuthor}>{reply.authorName}</Text>
+                  <Text style={styles.replyTime}>
+                    {formatDate(reply.createdAt)}
+                  </Text>
+                  {isMyReply && (
+                    <TouchableOpacity
+                      style={styles.replyMenuButton}
+                      onPress={() => handleReplyMenuPress(reply.id)}
+                    >
+                      <Ionicons
+                        name="ellipsis-vertical"
+                        size={14}
+                        color="#8E8E93"
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <Text style={styles.replyContent}>{reply.content}</Text>
+              </View>
+            </View>
+          );
+        })}
+
       <Modal
         visible={showMenuModal}
         transparent
@@ -275,7 +343,6 @@ export default function CommentItem({
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* 대댓글 메뉴 모달 */}
       <Modal
         visible={showReplyMenuModal}
         transparent
@@ -312,7 +379,6 @@ export default function CommentItem({
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* 신고 모달 */}
       <Modal
         visible={showReportModal}
         transparent
@@ -385,7 +451,6 @@ export default function CommentItem({
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* 신고 확인 모달 */}
       <Modal
         visible={showConfirmModal}
         transparent
@@ -438,8 +503,6 @@ export default function CommentItem({
     </View>
   );
 }
-
-// styles는 동일...
 
 const styles = StyleSheet.create({
   container: {

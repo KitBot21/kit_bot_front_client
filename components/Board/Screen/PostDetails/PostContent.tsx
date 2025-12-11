@@ -19,6 +19,8 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/App";
 import { useAuth } from "@/components/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
+
 interface PostContentProps {
   post: Post;
 }
@@ -26,16 +28,35 @@ interface PostContentProps {
 export default function PostContent({ post }: PostContentProps) {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useTranslation();
   const [showReportModal, setShowReportModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [selectedReason, setSelectedReason] = useState("");
   const { user } = useAuth();
-  const displayName = user?.username ?? "익명";
+  const displayName = post.authorNickname ?? t("common.anonymous");
 
   const toggleRecommendMutation = useToggleRecommendPost();
   const reportMutation = useReportPost();
   const deletePostMutation = useDeletePost();
+
+  const checkKumohAuth = () => {
+    if (!user || user.role === "guest") {
+      Alert.alert(
+        t("auth.verificationRequired"),
+        t("auth.verificationRequiredDesc"),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("auth.verify"),
+            onPress: () => navigation.navigate("SchoolAuth"),
+          },
+        ]
+      );
+      return false;
+    }
+    return true;
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -45,30 +66,27 @@ export default function PostContent({ post }: PostContentProps) {
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes}분 전`;
+    if (diffInMinutes < 1) {
+      return t("time.justNow");
+    } else if (diffInMinutes < 60) {
+      return t("time.minutesAgo", { count: diffInMinutes });
     } else if (diffInHours < 24) {
-      return `${diffInHours}시간 전`;
+      return t("time.hoursAgo", { count: diffInHours });
     } else if (diffInDays < 7) {
-      return `${diffInDays}일 전`;
+      return t("time.daysAgo", { count: diffInDays });
     } else {
       return date.toLocaleDateString("ko-KR");
     }
   };
 
-  const getAuthorName = (authorId: string) => {
-    return authorId.substring(0, 8);
-  };
-
   const handleLike = () => {
+    if (!checkKumohAuth()) return;
     toggleRecommendMutation.mutate(post.id);
-    console.log(post.recommended);
   };
 
   const handleReport = () => {
-    if (post.reported) {
-      return;
-    }
+    if (!checkKumohAuth()) return;
+    if (post.reported) return;
     setShowReportModal(true);
   };
 
@@ -85,14 +103,14 @@ export default function PostContent({ post }: PostContentProps) {
       { postId: post.id, reason: selectedReason },
       {
         onSuccess: () => {
-          Alert.alert("신고 완료", "신고가 완료되었습니다.", [
-            { text: "확인" },
+          Alert.alert(t("comment.reportComplete"), t("comment.reportSuccess"), [
+            { text: t("common.confirm") },
           ]);
         },
         onError: (error) => {
           Alert.alert(
-            "오류",
-            error instanceof Error ? error.message : "신고에 실패했습니다."
+            t("common.error"),
+            error instanceof Error ? error.message : t("common.failed")
           );
         },
       }
@@ -110,25 +128,25 @@ export default function PostContent({ post }: PostContentProps) {
 
   const handleDelete = () => {
     setShowMenuModal(false);
-    Alert.alert("게시글 삭제", "정말 이 게시글을 삭제하시겠습니까?", [
-      { text: "취소", style: "cancel" },
+    Alert.alert(t("post.deleteTitle"), t("post.deleteConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "삭제",
+        text: t("common.delete"),
         style: "destructive",
         onPress: () => {
           deletePostMutation.mutate(post.id, {
             onSuccess: () => {
-              Alert.alert("삭제 완료", "게시글이 삭제되었습니다.", [
+              Alert.alert(t("post.deleteComplete"), t("post.deleteSuccess"), [
                 {
-                  text: "확인",
+                  text: t("common.confirm"),
                   onPress: () => navigation.goBack(),
                 },
               ]);
             },
             onError: (error: Error) => {
               Alert.alert(
-                "오류",
-                error.message || "게시글 삭제에 실패했습니다."
+                t("common.error"),
+                error.message || t("post.deleteFailed")
               );
             },
           });
@@ -137,7 +155,7 @@ export default function PostContent({ post }: PostContentProps) {
     ]);
   };
 
-  const isMyPost = user && post.authorId === user.id; // 👈 수정
+  const isMyPost = user && post.authorId === user.id;
 
   return (
     <>
@@ -156,15 +174,17 @@ export default function PostContent({ post }: PostContentProps) {
             {post.status === "RESOLVED" && (
               <View style={styles.resolvedBadge}>
                 <Ionicons name="checkmark-circle" size={16} color="#34C759" />
-                <Text style={styles.resolvedText}>해결됨</Text>
+                <Text style={styles.resolvedText}>{t("post.resolved")}</Text>
               </View>
             )}
-            <TouchableOpacity
-              style={styles.menuButton}
-              onPress={handleMenuPress}
-            >
-              <Ionicons name="ellipsis-vertical" size={20} color="#8E8E93" />
-            </TouchableOpacity>
+            {isMyPost && (
+              <TouchableOpacity
+                style={styles.menuButton}
+                onPress={handleMenuPress}
+              >
+                <Ionicons name="ellipsis-vertical" size={20} color="#8E8E93" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -208,7 +228,6 @@ export default function PostContent({ post }: PostContentProps) {
         </View>
       </View>
 
-      {/* 신고 사유 선택 모달 */}
       <Modal
         visible={showReportModal}
         transparent
@@ -219,41 +238,61 @@ export default function PostContent({ post }: PostContentProps) {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.reportModal}>
-                <Text style={styles.modalTitle}>신고 사유 선택</Text>
+                <Text style={styles.modalTitle}>
+                  {t("comment.selectReportReason")}
+                </Text>
 
                 <TouchableOpacity
                   style={styles.reportOption}
-                  onPress={() => handleSelectReason("스팸/도배")}
+                  onPress={() =>
+                    handleSelectReason(t("comment.reportReasons.spam"))
+                  }
                 >
-                  <Text style={styles.reportOptionText}>스팸/도배</Text>
+                  <Text style={styles.reportOptionText}>
+                    {t("comment.reportReasons.spam")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.reportOption}
-                  onPress={() => handleSelectReason("욕설/비방")}
+                  onPress={() =>
+                    handleSelectReason(t("comment.reportReasons.abuse"))
+                  }
                 >
-                  <Text style={styles.reportOptionText}>욕설/비방</Text>
+                  <Text style={styles.reportOptionText}>
+                    {t("comment.reportReasons.abuse")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.reportOption}
-                  onPress={() => handleSelectReason("음란성")}
+                  onPress={() =>
+                    handleSelectReason(t("comment.reportReasons.inappropriate"))
+                  }
                 >
-                  <Text style={styles.reportOptionText}>음란성</Text>
+                  <Text style={styles.reportOptionText}>
+                    {t("comment.reportReasons.inappropriate")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.reportOption}
-                  onPress={() => handleSelectReason("기타")}
+                  onPress={() =>
+                    handleSelectReason(t("comment.reportReasons.other"))
+                  }
                 >
-                  <Text style={styles.reportOptionText}>기타</Text>
+                  <Text style={styles.reportOptionText}>
+                    {t("comment.reportReasons.other")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={() => setShowReportModal(false)}
                 >
-                  <Text style={styles.cancelButtonText}>취소</Text>
+                  <Text style={styles.cancelButtonText}>
+                    {t("common.cancel")}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -261,7 +300,6 @@ export default function PostContent({ post }: PostContentProps) {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* 신고 확인 모달 */}
       <Modal
         visible={showConfirmModal}
         transparent
@@ -278,10 +316,11 @@ export default function PostContent({ post }: PostContentProps) {
                   color="#FF3B30"
                   style={styles.confirmIcon}
                 />
-                <Text style={styles.confirmTitle}>정말 신고하시겠습니까?</Text>
+                <Text style={styles.confirmTitle}>
+                  {t("comment.reportConfirmTitle")}
+                </Text>
                 <Text style={styles.confirmDescription}>
-                  신고 후에는 취소할 수 없으며,{"\n"}
-                  허위 신고 시 제재를 받을 수 있습니다.
+                  {t("comment.reportConfirmDescription")}
                 </Text>
 
                 <View style={styles.confirmButtons}>
@@ -289,7 +328,9 @@ export default function PostContent({ post }: PostContentProps) {
                     style={[styles.confirmButton, styles.cancelConfirmButton]}
                     onPress={() => setShowConfirmModal(false)}
                   >
-                    <Text style={styles.cancelConfirmText}>취소</Text>
+                    <Text style={styles.cancelConfirmText}>
+                      {t("common.cancel")}
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.confirmButton, styles.reportConfirmButton]}
@@ -297,7 +338,9 @@ export default function PostContent({ post }: PostContentProps) {
                     disabled={reportMutation.isPending}
                   >
                     <Text style={styles.reportConfirmText}>
-                      {reportMutation.isPending ? "신고 중..." : "신고"}
+                      {reportMutation.isPending
+                        ? t("comment.reporting")
+                        : t("comment.report")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -307,7 +350,6 @@ export default function PostContent({ post }: PostContentProps) {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* 메뉴 모달 */}
       <Modal
         visible={showMenuModal}
         transparent
@@ -323,7 +365,7 @@ export default function PostContent({ post }: PostContentProps) {
                   onPress={handleEdit}
                 >
                   <Ionicons name="create-outline" size={20} color="#333" />
-                  <Text style={styles.menuOptionText}>수정</Text>
+                  <Text style={styles.menuOptionText}>{t("common.edit")}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -331,14 +373,18 @@ export default function PostContent({ post }: PostContentProps) {
                   onPress={handleDelete}
                 >
                   <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                  <Text style={styles.deleteOptionText}>삭제</Text>
+                  <Text style={styles.deleteOptionText}>
+                    {t("common.delete")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.cancelMenuButton}
                   onPress={() => setShowMenuModal(false)}
                 >
-                  <Text style={styles.cancelMenuText}>취소</Text>
+                  <Text style={styles.cancelMenuText}>
+                    {t("common.cancel")}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>

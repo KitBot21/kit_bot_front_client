@@ -228,10 +228,15 @@ export const useDeleteComment = () => {
   return useMutation({
     mutationFn: (commentId: string) => deleteComment(commentId),
     onSuccess: () => {
+      console.log(" 댓글 삭제 성공! 쿼리 무효화 시작");
       queryClient.invalidateQueries({ queryKey: ["comments"] });
       queryClient.invalidateQueries({ queryKey: ["replies"] });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["post"] });
+      console.log(" 쿼리 무효화 완료");
+    },
+    onError: (error) => {
+      console.log(" 댓글 삭제 실패:", error);
     },
   });
 };

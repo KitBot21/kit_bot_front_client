@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 interface CommentInputProps {
   onSubmit: (text: string) => void;
@@ -18,6 +19,7 @@ interface CommentInputProps {
   onCancelReply?: () => void;
   placeholder?: string;
   editable?: boolean;
+  onAuthRequest?: () => void;
 }
 
 const CommentInput = forwardRef<TextInput, CommentInputProps>(
@@ -29,9 +31,11 @@ const CommentInput = forwardRef<TextInput, CommentInputProps>(
       onCancelReply,
       placeholder,
       editable,
+      onAuthRequest,
     },
     ref
   ) => {
+    const { t } = useTranslation();
     const [text, setText] = useState("");
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const insets = useSafeAreaInsets();
@@ -57,53 +61,70 @@ const CommentInput = forwardRef<TextInput, CommentInputProps>(
       }
     };
 
+    const handleInputPress = () => {
+      if (!editable && onAuthRequest) {
+        onAuthRequest();
+      }
+    };
+
     return (
       <View style={styles.container}>
         {replyTo && (
           <View style={styles.replyBanner}>
-            <Text style={styles.replyText}>@{replyTo}에게 답글</Text>
+            <Text style={styles.replyText}>
+              {t("postDetail.replyTo", { name: replyTo })}
+            </Text>
             <TouchableOpacity onPress={onCancelReply}>
               <Ionicons name="close" size={20} color="#666" />
             </TouchableOpacity>
           </View>
         )}
 
-        <View
-          style={[
-            styles.inputRow,
-            {
-              paddingBottom: keyboardVisible ? 12 : Math.max(insets.bottom, 12),
-            },
-          ]}
+        <TouchableOpacity
+          activeOpacity={editable ? 1 : 0.7}
+          onPress={handleInputPress}
+          disabled={editable}
         >
-          <TextInput
-            ref={ref}
-            style={styles.input}
-            value={text}
-            onChangeText={setText}
-            placeholder={placeholder}
-            multiline
-            returnKeyType="send"
-            onSubmitEditing={handleSubmit}
-            blurOnSubmit={false}
-            editable={!isSubmitting || editable}
-          />
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#007AFF" />
-          ) : (
-            <TouchableOpacity
-              onPress={handleSubmit}
-              disabled={!text.trim()}
-              style={styles.sendButton}
-            >
-              <Ionicons
-                name="arrow-up-circle"
-                size={32}
-                color={text.trim() ? "#007AFF" : "#C7C7CC"}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+          <View
+            style={[
+              styles.inputRow,
+              {
+                paddingBottom: keyboardVisible
+                  ? 12
+                  : Math.max(insets.bottom, 12),
+              },
+            ]}
+          >
+            <TextInput
+              ref={ref}
+              style={styles.input}
+              value={text}
+              onChangeText={setText}
+              placeholder={placeholder}
+              multiline
+              returnKeyType="send"
+              onSubmitEditing={handleSubmit}
+              blurOnSubmit={false}
+              editable={!isSubmitting && editable}
+              pointerEvents={editable ? "auto" : "none"}
+            />
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <TouchableOpacity
+                onPress={handleSubmit}
+                disabled={!text.trim() || !editable}
+                style={styles.sendButton}
+              >
+                <Ionicons
+                  name="arrow-up-circle"
+                  size={32}
+                  color={text.trim() && editable ? "#007AFF" : "#C7C7CC"}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
       </View>
     );
   }

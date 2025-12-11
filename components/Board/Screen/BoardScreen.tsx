@@ -204,7 +204,10 @@ export default function BoardScreen() {
         data={posts}
         renderItem={({ item }) => <RenderPost item={item} />}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: 80 + insets.bottom },
+        ]}
         showsVerticalScrollIndicator={false}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}

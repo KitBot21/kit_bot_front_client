@@ -10,7 +10,7 @@ export default function CommentItemWithReplies({
   onAdoptAnswer: (id: string) => void;
   onReplyPress: (authorName: string) => void;
 }) {
-  const { data: replies = [] } = useReplies(comment.id); // 여기서 Hook 호출
+  const { data: replies = [] } = useReplies(comment.id);
 
   return (
     <CommentItem

@@ -40,12 +40,18 @@ export default function SchoolAuthScreen() {
     });
   };
 
-  // OTP 박스 렌더링
+  const handleCodeBoxPress = () => {
+    codeInputRef.current?.focus();
+  };
+
   const renderCodeBoxes = () => {
     const boxes = [];
     for (let i = 0; i < 6; i++) {
       boxes.push(
-        <View key={i} style={styles.codeBox}>
+        <View
+          key={i}
+          style={[styles.codeBox, code.length === i && styles.codeBoxFocused]}
+        >
           <Text style={styles.codeText}>{code[i] || ""}</Text>
         </View>
       );
@@ -72,7 +78,6 @@ export default function SchoolAuthScreen() {
         <Text style={styles.title}>{t("schoolAuth.title")}</Text>
         <Text style={styles.subtitle}>{t("schoolAuth.subtitle")}</Text>
 
-        {/* 학번 입력 */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>{t("schoolAuth.studentId")}</Text>
           <View style={styles.row}>
@@ -81,26 +86,24 @@ export default function SchoolAuthScreen() {
               value={studentId}
               onChangeText={setStudentId}
               editable={!isSent}
+              placeholderTextColor="#999"
             />
             <Text style={styles.domain}>@kumoh.ac.kr</Text>
           </View>
         </View>
 
-        {/* 인증번호 입력 - OTP 스타일 */}
         {isSent && (
           <View style={styles.inputContainer}>
             <Text style={styles.label}>{t("schoolAuth.verificationCode")}</Text>
 
-            {/* OTP 박스들 (터치하면 숨겨진 input에 포커스) */}
             <TouchableOpacity
               style={styles.codeBoxContainer}
-              onPress={() => codeInputRef.current?.focus()}
+              onPress={handleCodeBoxPress}
               activeOpacity={0.8}
             >
               {renderCodeBoxes()}
             </TouchableOpacity>
 
-            {/* 숨겨진 실제 입력창 */}
             <TextInput
               ref={codeInputRef}
               style={styles.hiddenInput}
@@ -109,11 +112,13 @@ export default function SchoolAuthScreen() {
               keyboardType="number-pad"
               maxLength={6}
               autoFocus
+              caretHidden={true}
             />
+
+            <Text style={styles.codeHint}>{t("schoolAuth.codeHint")}</Text>
           </View>
         )}
 
-        {/* 버튼 영역 */}
         <View style={styles.buttonContainer}>
           {loading ? (
             <ActivityIndicator size="large" color="#007AFF" />
@@ -121,8 +126,12 @@ export default function SchoolAuthScreen() {
             <>
               {!isSent ? (
                 <TouchableOpacity
-                  style={styles.mainButton}
+                  style={[
+                    styles.mainButton,
+                    !studentId.trim() && styles.mainButtonDisabled,
+                  ]}
                   onPress={handleSend}
+                  disabled={!studentId.trim()}
                 >
                   <Text style={styles.buttonText}>
                     {t("schoolAuth.getCode")}
@@ -230,7 +239,6 @@ const styles = StyleSheet.create({
     color: "#666",
   },
 
-  // OTP 스타일 인증번호 입력
   codeBoxContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -246,16 +254,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F9F9F9",
   },
+  codeBoxFocused: {
+    borderColor: "#007AFF",
+    backgroundColor: "#F0F7FF",
+  },
   codeText: {
     fontSize: 24,
     fontWeight: "700",
     color: "#333",
   },
+  codeHint: {
+    fontSize: 12,
+    color: "#999",
+    textAlign: "center",
+    marginTop: 8,
+  },
   hiddenInput: {
     position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     opacity: 0,
-    height: 0,
-    width: 0,
   },
 
   buttonContainer: {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,26 +8,46 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "@/App";
 import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.0.10:8080";
+import { apiClient } from "../api/services/chatApi";
 
 export default function SetUsernameScreen() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const { accessToken, updateUser } = useAuth();
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { accessToken, updateUser, logout } = useAuth();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        handleCancel();
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, []);
+
+  const handleCancel = () => {
+    Alert.alert(t("common.alert"), t("setUsername.cancelConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.confirm"),
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+        },
+      },
+    ]);
+  };
 
   const validateUsername = (value: string): boolean => {
     if (value.length < 2 || value.length > 10) {
@@ -50,12 +70,10 @@ export default function SetUsernameScreen() {
 
     setChecking(true);
     try {
-      const res = await fetch(
-        `${API_URL}/api/user/username/check?username=${encodeURIComponent(
-          value
-        )}`
+      const res = await apiClient.get(
+        `/api/user/username/check?username=${encodeURIComponent(value)}`
       );
-      const data = await res.json();
+      const data = res.data;
 
       if (!data.available) {
         setError(t("setUsername.duplicateError"));
@@ -73,36 +91,21 @@ export default function SetUsernameScreen() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/api/user/username`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ username }),
-      });
-
-      const data = await res.json();
+      const res = await apiClient.post(
+        `/api/user/username`,
+        { username },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      const data = res.data;
 
       if (data.success) {
         await updateUser(data.user);
         Alert.alert(t("common.complete"), t("setUsername.success"), [
-          {
-            text: t("common.confirm"),
-            onPress: () => {
-              if (data.user.role === "guest") {
-                navigation.reset({
-                  index: 1,
-                  routes: [{ name: "MainTabs" }, { name: "SchoolAuth" }],
-                });
-              } else {
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: "MainTabs" }],
-                });
-              }
-            },
-          },
+          { text: t("common.confirm") },
         ]);
       } else {
         setError(data.message);
@@ -174,6 +177,10 @@ export default function SetUsernameScreen() {
           ) : (
             <Text style={styles.submitButtonText}>{t("common.complete")}</Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+          <Text style={styles.cancelButtonText}>{t("common.cancel")}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -255,5 +262,13 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  cancelButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+  },
+  cancelButtonText: {
+    color: "#666",
+    fontSize: 14,
   },
 });

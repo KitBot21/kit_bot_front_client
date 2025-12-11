@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/App";
 import { useGoogleAuth } from "../hooks/useGoogleAuth";
+import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 
 export default function LoginScreen() {
@@ -18,6 +19,7 @@ export default function LoginScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { signIn } = useGoogleAuth();
+  const { isAuthenticated } = useAuth();
   const { t } = useTranslation();
 
   const handleGoogleLogin = async () => {

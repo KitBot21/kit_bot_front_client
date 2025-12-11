@@ -4,11 +4,18 @@ export interface GoogleCalendarEvent {
   description?: string;
   location?: string;
   start: {
-    dateTime?: string; // 시간 지정 일정
-    date?: string; // 종일 일정
+    dateTime?: string;
+    date?: string;
   };
   end: {
     dateTime?: string;
     date?: string;
+  };
+  reminders?: {
+    useDefault?: boolean;
+    overrides?: Array<{
+      method: string;
+      minutes: number;
+    }>;
   };
 }

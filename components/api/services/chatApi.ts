@@ -1,5 +1,5 @@
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // [1] 이거 추가
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   QueryRequestDTO,
   QueryResponseDTO,
@@ -24,22 +24,26 @@ import {
   NoticeKeywordInfo,
 } from "../types/APITypes/subscripeKeyword";
 import { NotificationItem } from "../types/APITypes/notification";
+import {
+  PopularKeyword,
+  PopularKeywordsParams,
+  LatestQuestionByKeyword,
+} from "../types/APITypes/popularTypes";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
-const apiClient = axios.create({
+export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
   },
 });
 
 apiClient.interceptors.request.use(
   async (config) => {
-    // 저장소에서 토큰 꺼내기
     const token = await AsyncStorage.getItem("accessToken");
 
-    // 토큰이 있으면 헤더에 'Bearer 토큰' 형태로 추가
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -51,7 +55,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-// [4] (선택) 응답 인터셉터: 403 에러 로그 확인용
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -67,7 +70,7 @@ export const postChatQuery = async (
 ): Promise<QueryResponseDTO> => {
   const requestData: QueryRequestDTO = {
     question: userQuestion,
-    appLanguage: i18n.language, // 추가
+    appLanguage: i18n.language,
   };
 
   try {
@@ -320,7 +323,7 @@ export const fetchMyPosts = async (page = 0, size = 10) => {
     params: {
       page,
       size,
-      sort: "createdAt,desc", // 최신순 정렬 기본값
+      sort: "createdAt,desc",
     },
   });
   return data;
@@ -333,7 +336,7 @@ export const createGoogleEvent = async (
     date: string;
     startTime?: string;
     endTime?: string;
-    reminders?: number[]; // [10] 이면 10분 전 알림
+    reminders?: number[];
   }
 ) => {
   try {
@@ -344,10 +347,9 @@ export const createGoogleEvent = async (
       eventData.endTime || "10:00"
     }:00+09:00`;
 
-    // 📍 알림 설정 로직 추가
     const remindersOverrides =
       eventData.reminders?.map((min) => ({
-        method: "popup", // 스마트폰 푸시 알림
+        method: "popup",
         minutes: min,
       })) || [];
 
@@ -362,10 +364,9 @@ export const createGoogleEvent = async (
         dateTime: endDateTime,
         timeZone: "Asia/Seoul",
       },
-      // 📍 여기가 핵심: 알림 설정
       reminders: {
-        useDefault: remindersOverrides.length === 0, // 알림 설정 없으면 구글 기본값 사용
-        overrides: remindersOverrides, // 있으면 내 설정 덮어쓰기
+        useDefault: remindersOverrides.length === 0,
+        overrides: remindersOverrides,
       },
     };
 
@@ -380,10 +381,93 @@ export const createGoogleEvent = async (
       }
     );
 
-    console.log("✅ 일정 등록 성공:", response.data);
+    console.log(" 일정 등록 성공:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ 일정 등록 실패:", error);
+    console.error(" 일정 등록 실패:", error);
+    throw error;
+  }
+};
+
+export const updateGoogleEvent = async (
+  accessToken: string,
+  eventId: string,
+  eventData: {
+    title: string;
+    date: string;
+    startTime?: string;
+    endTime?: string;
+    reminders?: number[];
+  }
+) => {
+  try {
+    const startDateTime = `${eventData.date}T${
+      eventData.startTime || "09:00"
+    }:00+09:00`;
+    const endDateTime = `${eventData.date}T${
+      eventData.endTime || "10:00"
+    }:00+09:00`;
+
+    const remindersOverrides =
+      eventData.reminders?.map((min) => ({
+        method: "popup",
+        minutes: min,
+      })) || [];
+
+    const body = {
+      summary: eventData.title,
+      description: "KIT-Bot 앱에서 수정됨",
+      start: {
+        dateTime: startDateTime,
+        timeZone: "Asia/Seoul",
+      },
+      end: {
+        dateTime: endDateTime,
+        timeZone: "Asia/Seoul",
+      },
+      reminders: {
+        useDefault: remindersOverrides.length === 0,
+        overrides: remindersOverrides,
+      },
+    };
+
+    const response = await axios.patch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+      body,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log(" 일정 수정 성공:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(" 일정 수정 실패:", error);
+    throw error;
+  }
+};
+
+export const deleteGoogleEvent = async (
+  accessToken: string,
+  eventId: string
+) => {
+  try {
+    await axios.delete(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    console.log(" 일정 삭제 성공:", eventId);
+    return true;
+  } catch (error) {
+    console.error(" 일정 삭제 실패:", error);
     throw error;
   }
 };
@@ -424,7 +508,6 @@ export const sendVerificationEmail = async (
   return response.data;
 };
 
-// 2. 인증번호 검증 API
 export const verifyEmailCode = async (
   studentId: string,
   code: string,
@@ -466,7 +549,6 @@ export const getMyKeywords = async (): Promise<KeywordSubscription[]> => {
   }
 };
 
-// 2. 구독 키워드 일괄 저장 (PUT /api/notice-keywords/me)
 export const updateMyKeywords = async (
   enabledKeywords: string[]
 ): Promise<MyKeywordsResponse> => {
@@ -541,7 +623,6 @@ export const getMyNotifications = async (): Promise<NotificationItem[]> => {
   }
 };
 
-// 2. 알림 읽음 처리
 export const markNotificationAsRead = async (
   notificationId: string
 ): Promise<void> => {
@@ -558,7 +639,6 @@ export const markNotificationAsRead = async (
   }
 };
 
-// 3. 안 읽은 알림 개수
 export const getUnreadNotificationCount = async (): Promise<number> => {
   try {
     const response = await apiClient.get<number>(
@@ -574,4 +654,59 @@ export const getUnreadNotificationCount = async (): Promise<number> => {
     }
     throw new Error("네트워크 오류가 발생했습니다.");
   }
+};
+
+export const fetchPopularKeywords = async (
+  params?: PopularKeywordsParams
+): Promise<PopularKeyword[]> => {
+  const response = await apiClient.get<PopularKeyword[]>(
+    "/api/popular/answer-keywords",
+    {
+      params: {
+        size: params?.size ?? 5,
+      },
+    }
+  );
+  return response.data;
+};
+
+export const fetchLatestQuestionByKeyword = async (
+  keyword: string
+): Promise<LatestQuestionByKeyword | null> => {
+  try {
+    const response = await apiClient.get<LatestQuestionByKeyword>(
+      `/api/popular/answer-keywords/latest-question`,
+      { params: { keyword } }
+    );
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+export const deleteNotification = async (
+  notificationId: string
+): Promise<void> => {
+  await apiClient.delete(`/api/notifications/${notificationId}`);
+};
+
+export const deleteAllNotifications = async (): Promise<void> => {
+  await apiClient.delete("/api/notifications/all");
+};
+
+export const withdrawUser = async (): Promise<void> => {
+  await apiClient.delete("/api/user/me");
+};
+
+export const updateNotificationEnabled = async (
+  enabled: boolean
+): Promise<void> => {
+  await apiClient.patch("/api/user/notification", { enabled });
+};
+
+export const deletePushToken = async (): Promise<void> => {
+  await apiClient.delete("/api/user/push-token");
 };

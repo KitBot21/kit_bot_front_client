@@ -9,10 +9,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/App";
 import { useAuth } from "../contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.0.11:8080";
-
-console.log("🚀 현재 사용 중인 백엔드 URL:", API_URL);
+import { apiClient } from "../api/services/chatApi";
+import { useTranslation } from "react-i18next";
 
 GoogleSignin.configure({
   webClientId:
@@ -28,110 +26,98 @@ export function useGoogleAuth() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { login, logout } = useAuth();
+  const { t } = useTranslation();
 
   const signIn = async () => {
     try {
       await GoogleSignin.hasPlayServices();
 
-      // 이전 로그인 세션 완전히 끊기 (계정 선택창 강제)
-      try {
-        await GoogleSignin.revokeAccess();
-      } catch (e) {
-        // 이전 세션이 없으면 에러나는데 무시
-      }
       try {
         await GoogleSignin.signOut();
-      } catch (e) {
-        // 무시
-      }
+      } catch (e) {}
 
-      // 1. 구글 로그인 시도
       const response = await GoogleSignin.signIn();
 
-      // 2. 데이터 추출
+      if (!response || response.type === "cancelled") {
+        console.log("User cancelled login");
+        return;
+      }
+
       const { idToken, user } = response.data || (response as any);
 
-      // 3. Access Token 추출
+      if (!idToken) {
+        console.log("No idToken - possibly cancelled");
+        return;
+      }
+
       const tokens = await GoogleSignin.getTokens();
       const googleAccessToken = tokens.accessToken;
 
-      console.log("🔥 구글 ID Token (백엔드용):", idToken ? "있음" : "없음");
+      console.log(" 구글 ID Token (백엔드용):", idToken ? "있음" : "없음");
       console.log(
-        "🔥 구글 Access Token (캘린더용):",
+        " 구글 Access Token (캘린더용):",
         googleAccessToken ? "있음" : "없음"
       );
 
       if (!idToken) {
-        Alert.alert("오류", "구글 토큰을 가져오지 못했습니다.");
+        Alert.alert(t("auth.error"), t("auth.googleTokenError"));
         return;
       }
 
-      // 캘린더용 토큰 저장
       await AsyncStorage.setItem("googleAccessToken", googleAccessToken);
 
-      // 4. 백엔드로 구글 ID 토큰 전송
       console.log("백엔드 로그인 요청 중...");
-      const res = await fetch(`${API_URL}/api/auth/google/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken: idToken }),
-      });
+      const res = await apiClient.post("/api/auth/google/login", { idToken });
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Server Error: ${errorText}`);
-      }
-
-      const data = await res.json();
+      const data = res.data;
       console.log(
-        "🔍 백엔드 응답 user 객체:",
+        " 백엔드 응답 user 객체:",
         JSON.stringify(data.user, null, 2)
       );
 
-      // 5. 앱 로그인 처리
-      await login(data.accessToken, data.user);
+      console.log(" 백엔드에서 받은 accessToken:", data.accessToken);
+      console.log(" 토큰 타입:", typeof data.accessToken);
+      console.log(" 토큰 길이:", data.accessToken?.length);
 
-      // 6. 화면 이동 분기
-      Alert.alert(
-        "로그인 성공",
-        `환영합니다, ${data.user.username || data.user.email}님!`,
-        [
-          {
-            text: "확인",
-            onPress: () => {
-              if (!data.user.usernameSet) {
-                // 1순위: 닉네임 미설정 → 닉네임 설정
-                navigation.navigate("SetUsername");
-              } else if (data.user.role === "guest") {
-                // 2순위: 닉네임 O, 학교 인증 X → 학교 인증 (선택적)
-                navigation.reset({
-                  index: 1,
-                  routes: [{ name: "MainTabs" }, { name: "SchoolAuth" }],
-                });
-              } else {
-                // 3순위: 둘 다 완료 → 메인
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: "MainTabs" }],
-                });
-              }
-            },
-          },
-        ]
-      );
+      await login(data.accessToken, data.user);
+      if (data.user.usernameSet) {
+        await new Promise<void>((resolve) => {
+          Alert.alert(
+            t("auth.loginSuccess"),
+            t("auth.welcomeMessage", { username: data.user.username }),
+            [{ text: t("common.confirm"), onPress: () => resolve() }]
+          );
+        });
+      }
+      navigation.navigate("MainTabs");
+
+      const savedToken = await AsyncStorage.getItem("accessToken");
+      console.log(" AsyncStorage에 저장된 토큰:", savedToken);
+      console.log(" 저장 성공 여부:", savedToken === data.accessToken);
 
       return response;
     } catch (error: any) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log("User cancelled login");
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log("Sign in already in progress");
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert("오류", "Google Play 서비스를 사용할 수 없습니다.");
-      } else {
-        console.error("Login Error:", error);
-        Alert.alert("로그인 실패", "서버와 통신 중 문제가 발생했습니다.");
+      console.log(" 로그인 에러:", error);
+      console.log(" 에러 코드:", error.code);
+
+      if (
+        error.code === statusCodes.SIGN_IN_CANCELLED ||
+        error.code === statusCodes.IN_PROGRESS ||
+        error.code === "getTokens" ||
+        error.message?.toLowerCase().includes("cancel") ||
+        error.message?.includes("getTokens")
+      ) {
+        console.log("User cancelled or in progress");
+        return;
       }
+
+      if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert(t("auth.error"), t("auth.playServicesError"));
+        return;
+      }
+
+      console.error("Login Error:", error);
+      Alert.alert(t("auth.loginFailed"), t("auth.serverError"));
     }
   };
 
@@ -146,7 +132,7 @@ export function useGoogleAuth() {
       await AsyncStorage.removeItem("googleAccessToken");
       await logout();
 
-      console.log("👋 통합 로그아웃 완료");
+      console.log(" 통합 로그아웃 완료");
     } catch (error) {
       console.error("로그아웃 실패:", error);
     }

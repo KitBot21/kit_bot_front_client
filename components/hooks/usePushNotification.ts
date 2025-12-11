@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
+import { Platform, Alert } from "react-native";
+import { useTranslation } from "react-i18next";
 
 Notifications.setNotificationHandler({
   handleNotification: async () =>
@@ -14,6 +15,7 @@ Notifications.setNotificationHandler({
 });
 
 export function usePushNotification() {
+  const { t } = useTranslation();
   const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
   const [notification, setNotification] =
     useState<Notifications.Notification>();
@@ -46,7 +48,7 @@ export function usePushNotification() {
       }
 
       if (finalStatus !== "granted") {
-        alert("알림 권한을 허용해야 알림을 받을 수 있습니다!");
+        Alert.alert(t("push.permissionRequired"));
         return;
       }
 
@@ -67,14 +69,12 @@ export function usePushNotification() {
           })
         ).data;
 
-        console.log("🔥 내 엑스포 푸시 토큰:", token);
+        console.log(" 내 엑스포 푸시 토큰:", token);
       } catch (e) {
         console.error("토큰 발급 실패:", e);
       }
     } else {
-      alert(
-        "에뮬레이터에서는 푸시 알림이 안 됩니다. 실제 폰으로 테스트하세요."
-      );
+      Alert.alert(t("push.emulatorNotSupported"));
     }
 
     return token;
@@ -102,5 +102,10 @@ export function usePushNotification() {
     };
   }, []);
 
-  return { expoPushToken, notification, notificationResponse };
+  return {
+    expoPushToken,
+    notification,
+    notificationResponse,
+    registerForPushNotificationsAsync,
+  };
 }
